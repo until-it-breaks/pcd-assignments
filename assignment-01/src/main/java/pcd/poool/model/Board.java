@@ -32,7 +32,7 @@ public class Board {
         Iterator<Ball> it = balls.iterator();
         while (it.hasNext()) {
             Ball ball = it.next();
-            balls.parallelStream().forEach(b -> b.updateState(dt, this));
+            ball.updateState(dt, this);
             if (isInHole(ball)) {
                 if (ball.getLastCollider() == playerBall) {
                     increasePlayerScore();
