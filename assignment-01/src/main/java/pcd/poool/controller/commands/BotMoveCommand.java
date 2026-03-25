@@ -1,17 +1,17 @@
-package pcd.poool.controller;
+package pcd.poool.controller.commands;
 
 import pcd.poool.model.Board;
 import pcd.poool.model.V2d;
 
-public class CombinedMoveCommand implements Command {
+public class BotMoveCommand implements Command {
     private final V2d velocity;
 
-    public CombinedMoveCommand(V2d velocity) {
+    public BotMoveCommand(V2d velocity) {
         this.velocity = velocity;
     }
 
     @Override
     public void execute(Board board) {
-        board.getPlayerBall().kick(velocity);
+        board.getBotBall().kick(velocity);
     }
 }

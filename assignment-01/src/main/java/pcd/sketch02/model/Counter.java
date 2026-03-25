@@ -5,9 +5,9 @@ import java.util.List;
 
 public class Counter {
 
-	private int initialCont;
+	private final int initialCont;
 	private int cont;
-	private List<CounterObserver> observers;
+	private final List<CounterObserver> observers;
 	
 	public Counter(int cont) {
 		this.initialCont = cont;

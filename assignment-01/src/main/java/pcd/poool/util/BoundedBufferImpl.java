@@ -15,7 +15,7 @@ public class BoundedBufferImpl<Item> implements BoundedBuffer<Item> {
 	private final int maxSize;
 
 	public BoundedBufferImpl(int size) {
-		buffer = new LinkedList<Item>();
+		buffer = new LinkedList<>();
 		maxSize = size;
 	}
 

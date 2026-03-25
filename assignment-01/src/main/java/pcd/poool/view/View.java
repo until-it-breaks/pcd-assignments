@@ -1,14 +1,13 @@
 package pcd.poool.view;
 
-
-import pcd.poool.controller.ActiveController;
+import pcd.poool.controller.commands.CommandProcessor;
 
 public class View {
 
 	private final ViewFrame frame;
 	private final ViewModel viewModel;
 	
-	public View(ViewModel model, int w, int h, ActiveController controller) {
+	public View(ViewModel model, int w, int h, CommandProcessor controller) {
 		frame = new ViewFrame(model, w, h, controller);
 		frame.setVisible(true);
 		this.viewModel = model;

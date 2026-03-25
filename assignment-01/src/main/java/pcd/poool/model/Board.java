@@ -1,7 +1,7 @@
 package pcd.poool.model;
 
-import java.util.Iterator;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class Board {
 
@@ -25,33 +25,46 @@ public class Board {
         playerScore = 0;
         botScore = 0;
     }
-    
+
     public void updateState(long dt) {
-    	playerBall.updateState(dt, this);
+        playerBall.updateState(dt, this);
         botBall.updateState(dt, this);
-        Iterator<Ball> it = balls.iterator();
-        while (it.hasNext()) {
-            Ball ball = it.next();
+
+        for (int i = 0; i < balls.size(); i++) {
+            Ball ball = balls.get(i);
+
             ball.updateState(dt, this);
+
             if (isInHole(ball)) {
-                if (ball.getLastCollider() == playerBall) {
-                    increasePlayerScore();
-                } else if (ball.getLastCollider() == botBall) {
-                    increaseBotScore();
+                Ball last = ball.getLastCollider();
+
+                if (last == playerBall) increasePlayerScore();
+                else if (last == botBall) increaseBotScore();
+
+                balls.remove(i);
+                i--;
+            }
+        }
+
+        if (balls.size() > 50) {
+            IntStream.range(0, balls.size() - 1).parallel().forEach(i -> {
+                for (int j = i + 1; j < balls.size(); j++) {
+                    Ball.resolveCollision(balls.get(i), balls.get(j));
                 }
-                it.remove();
+            });
+        } else {
+            for (int i = 0; i < balls.size() - 1; i++) {
+                for (int j = i + 1; j < balls.size(); j++) {
+                    Ball.resolveCollision(balls.get(i), balls.get(j));
+                }
             }
         }
-    	
-    	for (int i = 0; i < balls.size() - 1; i++) {
-            for (int j = i + 1; j < balls.size(); j++) {
-                Ball.resolveCollision(balls.get(i), balls.get(j));
-            }
-        }
-    	for (var b: balls) {
-    		Ball.resolveCollision(playerBall, b);
+
+        for (Ball b : balls) {
+            Ball.resolveCollision(playerBall, b);
             Ball.resolveCollision(botBall, b);
-    	}
+        }
+
         Ball.resolveCollision(playerBall, botBall);
     }
     

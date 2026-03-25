@@ -1,11 +1,11 @@
 package pcd.poool.view;
 
-public class RenderSynch {
+public class RenderSync {
 
 	private long nextFrameToRender;
 	private long lastFrameRendered;
 	
-	public RenderSynch() {
+	public RenderSync() {
 		nextFrameToRender = 0;
 		lastFrameRendered = -1;
 	}

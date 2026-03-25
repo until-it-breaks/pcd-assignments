@@ -10,9 +10,9 @@ import pcd.sketch02.util.BoundedBuffer;
 
 public class View implements CounterObserver {
 
-	private ViewModel viewModel;
+	private final ViewModel viewModel;
 	
-	private ViewFrame frame;
+	private final ViewFrame frame;
 	
 	public View(ViewModel viewModel, ActiveController controller) {
 		this.viewModel = viewModel;

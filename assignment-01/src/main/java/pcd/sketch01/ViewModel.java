@@ -6,7 +6,7 @@ record BallViewInfo(P2d pos, double radius) {}
 
 public class ViewModel {
 
-	private ArrayList<BallViewInfo> balls;
+	private final ArrayList<BallViewInfo> balls;
 	private BallViewInfo player;
 	private int framePerSec;
 	

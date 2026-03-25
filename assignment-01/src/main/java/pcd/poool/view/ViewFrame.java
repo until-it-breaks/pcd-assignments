@@ -1,8 +1,8 @@
 package pcd.poool.view;
 
-import pcd.poool.controller.*;
+import pcd.poool.controller.commands.CommandProcessor;
 import pcd.poool.model.V2d;
-import pcd.poool.controller.CombinedMoveCommand;
+import pcd.poool.controller.MoveCommand;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,18 +15,18 @@ public class ViewFrame extends JFrame implements KeyListener {
     
     private final VisualiserPanel panel;
     private final ViewModel model;
-    private final RenderSynch sync;
-	private final ActiveController controller;
+    private final RenderSync sync;
+	private final CommandProcessor controller;
 
 	private final boolean[] keys = new boolean[256];
     
-    public ViewFrame(ViewModel model, int w, int h, ActiveController activeController){
+    public ViewFrame(ViewModel model, int w, int h, CommandProcessor commandProcessor){
     	this.model = model;
-    	this.sync = new RenderSynch();
-    	setTitle("Sketch 03");
+    	this.sync = new RenderSync();
+    	setTitle("Poool");
         setSize(w,h + 25);
         setResizable(false);
-        panel = new VisualiserPanel(w,h);
+        this.panel = new VisualiserPanel(w,h);
         getContentPane().add(panel);
         addWindowListener(new WindowAdapter(){
 			public void windowClosing(WindowEvent ev){
@@ -36,18 +36,17 @@ public class ViewFrame extends JFrame implements KeyListener {
 				System.exit(-1);
 			}
 		});
-		this.controller = activeController;
-
+		this.controller = commandProcessor;
 		this.addKeyListener(this);
     }
      
     public void render(){
-		long nf = sync.nextFrameToRender();
+		long nextFrame = sync.nextFrameToRender();
         panel.repaint();
 		try {
-			sync.waitForFrameRendered(nf);
-		} catch (InterruptedException ex) {
-			ex.printStackTrace();
+			sync.waitForFrameRendered(nextFrame);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
     }
 
@@ -71,7 +70,7 @@ public class ViewFrame extends JFrame implements KeyListener {
 	private void processInput() {
 		double vx = 0;
 		double vy = 0;
-		double speed = 1.0; // Adjust as needed
+		double speed = 1.0;
 
 		if (keys[KeyEvent.VK_W]) vy += speed;
 		if (keys[KeyEvent.VK_S]) vy -= speed;
@@ -79,7 +78,7 @@ public class ViewFrame extends JFrame implements KeyListener {
 		if (keys[KeyEvent.VK_D]) vx += speed;
 
 		if (vx != 0 || vy != 0) {
-			controller.notifyNewCmd(new CombinedMoveCommand(new V2d(vx, vy)));
+			controller.notifyNewCommand(new MoveCommand(new V2d(vx, vy)));
 		}
 	}
 
@@ -99,48 +98,45 @@ public class ViewFrame extends JFrame implements KeyListener {
     		Graphics2D g2 = (Graphics2D) g;
     		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
     		g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-    		g2.clearRect(0,0,this.getWidth(),this.getHeight());
+    		g2.clearRect(0, 0, this.getWidth(), this.getHeight());
     		g2.setColor(Color.LIGHT_GRAY);
 		    g2.setStroke(new BasicStroke(1));
-    		g2.drawLine(ox,0,ox,oy*2);
-    		g2.drawLine(0,oy,ox*2,oy);
+    		g2.drawLine(ox, 0, ox, oy * 2);
+    		g2.drawLine(0, oy, ox * 2, oy);
     		g2.setColor(Color.BLACK);
-
 			for (var hole: model.getHoles()) {
 				int holeRadius = (int)(hole.radius() * delta);
 				int x0 = (int)(ox + hole.pos().x() * delta);
 				int y0 = (int)(oy - hole.pos().y() * delta);
 				g2.fillOval(x0 - holeRadius, y0 - holeRadius, holeRadius * 2, holeRadius * 2);
 			}
-
-			g2.setStroke(new BasicStroke(1));
-			for (var b: model.getBalls()) {
-				var p = b.pos();
-				int x0 = (int)(ox + p.x()*delta);
-				int y0 = (int)(oy - p.y()*delta);
-				int radiusX = (int)(b.radius()*delta);
-				int radiusY = (int)(b.radius()*delta);
-				g2.drawOval(x0 - radiusX,y0 - radiusY,radiusX*2,radiusY*2);
+			for (var ball: model.getBalls()) {
+				var pos = ball.pos();
+				int x0 = (int)(ox + pos.x() * delta);
+				int y0 = (int)(oy - pos.y() * delta);
+				int radiusX = (int)(ball.radius() * delta);
+				int radiusY = (int)(ball.radius() * delta);
+				g2.drawOval(x0 - radiusX, y0 - radiusY, radiusX * 2, radiusY * 2);
 			}
 			g2.setStroke(new BasicStroke(3));
-			var pb = model.getPlayerBall();
-			if (pb != null) {
-				var p1 = pb.pos();
-				int x0 = (int)(ox + p1.x()*delta);
-				int y0 = (int)(oy - p1.y()*delta);
-				int radiusX = (int)(pb.radius()*delta);
-				int radiusY = (int)(pb.radius()*delta);
-				g2.drawOval(x0 - radiusX,y0 - radiusY,radiusX*2,radiusY*2);
+			var player = model.getPlayerBall();
+			if (player != null) {
+				var pos = player.pos();
+				int x0 = (int)(ox + pos.x() * delta);
+				int y0 = (int)(oy - pos.y() * delta);
+				int radiusX = (int)(player.radius() * delta);
+				int radiusY = (int)(player.radius() * delta);
+				g2.drawOval(x0 - radiusX, y0 - radiusY, radiusX * 2, radiusY * 2);
 				g2.drawString("P", x0 - (radiusX / 3), y0 + (radiusY / 3));
 			}
-			var botBall = model.getBotBall();
-			if (botBall != null) {
-				var p1 = botBall.pos();
-				int x0 = (int)(ox + p1.x()*delta);
-				int y0 = (int)(oy - p1.y()*delta);
-				int radiusX = (int)(botBall.radius()*delta);
-				int radiusY = (int)(botBall.radius()*delta);
-				g2.drawOval(x0 - radiusX,y0 - radiusY,radiusX*2,radiusY*2);
+			var bot = model.getBotBall();
+			if (bot != null) {
+				var pos = bot.pos();
+				int x0 = (int)(ox + pos.x() * delta);
+				int y0 = (int)(oy - pos.y() * delta);
+				int radiusX = (int)(bot.radius() * delta);
+				int radiusY = (int)(bot.radius() * delta);
+				g2.drawOval(x0 - radiusX, y0 - radiusY, radiusX * 2, radiusY * 2);
 				g2.drawString("B", x0 - (radiusX / 3), y0 + (radiusY / 3));
 			}
 			g2.setStroke(new BasicStroke(1));

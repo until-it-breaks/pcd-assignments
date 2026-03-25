@@ -2,7 +2,7 @@ package pcd.sketch02.model;
 
 public class AutonomousUpdater extends Thread {
 
-	private Counter count;
+	private final Counter count;
 	
 	public AutonomousUpdater(Counter count) {
 		this.count = count;	

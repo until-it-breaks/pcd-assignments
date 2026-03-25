@@ -11,8 +11,8 @@ import java.util.LinkedList;
  */
 public class BoundedBufferImpl<Item> implements BoundedBuffer<Item> {
 
-	private LinkedList<Item> buffer;
-	private int maxSize;
+	private final LinkedList<Item> buffer;
+	private final int maxSize;
 
 	public BoundedBufferImpl(int size) {
 		buffer = new LinkedList<Item>();

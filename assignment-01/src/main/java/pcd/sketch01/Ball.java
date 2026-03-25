@@ -4,11 +4,11 @@ public class Ball {
     
     private P2d pos;
     private V2d vel;
-    private double radius;
-    private double mass;   
+    private final double radius;
+    private final double mass;
     
-    private static double FRICTION_FACTOR = 0.25; 	/* 0 minimum */
-    private static double RESTITUTION_FACTOR = 1; 
+    private static final double FRICTION_FACTOR = 0.25; 	/* 0 minimum */
+    private static final double RESTITUTION_FACTOR = 1;
 
     public Ball(P2d pos, double radius, double mass, V2d vel){
        this.pos = pos;

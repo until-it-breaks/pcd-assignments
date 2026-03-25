@@ -1,5 +1,6 @@
 package pcd.poool.view;
 
+import pcd.poool.model.Ball;
 import pcd.poool.model.Board;
 import pcd.poool.model.Hole;
 
@@ -14,11 +15,11 @@ public class ViewModel {
 	private int framePerSec;
 	private int playerScore;
 	private int botScore;
-
 	private List<Hole> holes;
 	
 	public ViewModel() {
 		balls = new ArrayList<>();
+		holes = new ArrayList<>();
 		framePerSec = 0;
 		playerScore = 0;
 		botScore = 0;
@@ -26,21 +27,21 @@ public class ViewModel {
 	
 	public synchronized void update(Board board, int framePerSec) {
 		balls.clear();
-		for (var b: board.getBalls()) {
+		for (Ball b: board.getBalls()) {
 			balls.add(new BallViewInfo(b.getPos(), b.getRadius()));
 		}
 		this.framePerSec = framePerSec;
-		var p = board.getPlayerBall();
-		player = new BallViewInfo(p.getPos(), p.getRadius());
-		var b = board.getBotBall();
-		bot = new BallViewInfo(b.getPos(), b.getRadius());
+		Ball player = board.getPlayerBall();
+		this.player = new BallViewInfo(player.getPos(), player.getRadius());
+		Ball bot = board.getBotBall();
+		this.bot = new BallViewInfo(bot.getPos(), bot.getRadius());
 		this.playerScore = board.getPlayerScore();
 		this.botScore = board.getBotScore();
 		this.holes = board.getHoles();
 	}
 	
 	public synchronized List<BallViewInfo> getBalls(){
-        return new ArrayList<>(balls);
+		return new ArrayList<>(balls);
 	}
 
 	public synchronized List<Hole> getHoles() {

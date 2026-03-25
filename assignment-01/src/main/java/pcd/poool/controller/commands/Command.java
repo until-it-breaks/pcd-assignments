@@ -1,4 +1,4 @@
-package pcd.poool.controller;
+package pcd.poool.controller.commands;
 
 import pcd.poool.model.Board;
 
