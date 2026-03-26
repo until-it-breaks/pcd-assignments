@@ -11,6 +11,7 @@ public class GameEngine extends Thread {
     private volatile boolean running;
 
     public GameEngine(Board board, ViewModel viewModel, View view) {
+        super("GameEngineThread");
         this.board = board;
         this.viewModel = viewModel;
         this.view = view;

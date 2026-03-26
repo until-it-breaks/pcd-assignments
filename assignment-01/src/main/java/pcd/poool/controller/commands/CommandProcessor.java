@@ -11,6 +11,7 @@ public class CommandProcessor extends Thread {
 	private volatile boolean running;
 	
 	public CommandProcessor(Board board) {
+		super("CommandProcessorThread");
 		this.commandBuffer = new BoundedBufferImpl<>(100);
 		this.board = board;
 		this.running = true;

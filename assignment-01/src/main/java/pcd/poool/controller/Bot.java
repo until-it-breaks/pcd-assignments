@@ -14,6 +14,7 @@ public class Bot extends Thread {
     private volatile boolean running;
 
     public Bot(Board board, CommandProcessor commandProcessor) {
+        super("BotThread");
         this.board = board;
         this.commandProcessor = commandProcessor;
         this.random = new Random();
