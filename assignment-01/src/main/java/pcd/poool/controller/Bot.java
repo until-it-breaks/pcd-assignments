@@ -11,16 +11,18 @@ public class Bot extends Thread {
     private final Board board;
     private final CommandProcessor commandProcessor;
     private final Random random;
+    private volatile boolean running;
 
     public Bot(Board board, CommandProcessor commandProcessor) {
         this.board = board;
         this.commandProcessor = commandProcessor;
         this.random = new Random();
+        this.running = true;
     }
 
     @Override
     public void run() {
-        while (true) {
+        while (running) {
             var botBall = board.getBotBall();
             if (botBall != null) {
                 double angle = random.nextDouble() * Math.PI * 2;
@@ -33,5 +35,9 @@ public class Bot extends Thread {
                 }
             }
         }
+    }
+
+    public void stopBot() {
+        running = false;
     }
 }

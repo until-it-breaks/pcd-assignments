@@ -8,11 +8,13 @@ public class GameEngine extends Thread {
     private final Board board;
     private final ViewModel viewModel;
     private final View view;
+    private volatile boolean running;
 
     public GameEngine(Board board, ViewModel viewModel, View view) {
         this.board = board;
         this.viewModel = viewModel;
         this.view = view;
+        this.running = true;
     }
 
     @Override
@@ -21,7 +23,7 @@ public class GameEngine extends Thread {
         long startTime = System.currentTimeMillis();
         long lastUpdateTime = System.currentTimeMillis();
 
-        while (true) {
+        while (running) {
             long timeElapsed = System.currentTimeMillis() - lastUpdateTime;
             lastUpdateTime = System.currentTimeMillis();
             board.updateState(timeElapsed);
@@ -34,5 +36,9 @@ public class GameEngine extends Thread {
             viewModel.update(board, framesPerSecond);
             view.render();
         }
+    }
+
+    public void stopEngine() {
+        running = false;
     }
 }

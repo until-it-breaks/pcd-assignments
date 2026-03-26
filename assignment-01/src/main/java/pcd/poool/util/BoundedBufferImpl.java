@@ -3,11 +3,8 @@ package pcd.poool.util;
 import java.util.LinkedList;
 
 /**
- * 
  * Simple implementation of a bounded buffer
  * as a monitor, using raw mechanisms
- * 
- * @param <Item>
  */
 public class BoundedBufferImpl<Item> implements BoundedBuffer<Item> {
 

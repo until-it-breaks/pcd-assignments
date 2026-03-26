@@ -1,20 +1,20 @@
 package pcd.poool.model;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 
 public class Board {
 
     private List<Ball> balls;
+    private List<Hole> holes;
     private Ball playerBall;
     private Ball botBall;
     private Boundary bounds;
-    private List<Hole> holes;
-
     private int playerScore;
     private int botScore;
-    
-    public Board(){} 
+    private GameOver gameOver;
+
+    private final List<BoardListener> listeners = new ArrayList<>();
     
     public void init(BoardConf conf) {
     	balls = conf.getSmallBalls();
@@ -24,84 +24,69 @@ public class Board {
         holes = conf.getHoles();
         playerScore = 0;
         botScore = 0;
+        gameOver = null;
     }
 
     public void updateState(long dt) {
-        playerBall.updateState(dt, this);
-        botBall.updateState(dt, this);
+        updateMainBalls(dt);
+        updateSmallBalls(dt);
+        resolveCollisions();
+        checkGameOverConditions();
+    }
 
+    private void updateMainBalls(long dt) {
+        if (playerBall != null) playerBall.updateState(dt, this);
+        if (botBall != null) botBall.updateState(dt, this);
+    }
+
+    private void updateSmallBalls(long dt) {
         for (int i = 0; i < balls.size(); i++) {
             Ball ball = balls.get(i);
-
             ball.updateState(dt, this);
-
             if (isInHole(ball)) {
                 Ball last = ball.getLastCollider();
-
-                if (last == playerBall) increasePlayerScore();
-                else if (last == botBall) increaseBotScore();
-
+                if (last != null) {
+                    if (last == playerBall) increasePlayerScore();
+                    else if (last == botBall) increaseBotScore();
+                }
                 balls.remove(i);
                 i--;
             }
         }
+    }
 
-        if (balls.size() > 50) {
-            IntStream.range(0, balls.size() - 1).parallel().forEach(i -> {
-                for (int j = i + 1; j < balls.size(); j++) {
-                    Ball.resolveCollision(balls.get(i), balls.get(j));
-                }
-            });
-        } else {
-            for (int i = 0; i < balls.size() - 1; i++) {
-                for (int j = i + 1; j < balls.size(); j++) {
-                    Ball.resolveCollision(balls.get(i), balls.get(j));
-                }
+    private void resolveCollisions() {
+        // Small balls against each other
+        for (int i = 0; i < balls.size() - 1; i++) {
+            for (int j = i + 1; j < balls.size(); j++) {
+                Ball.resolveCollision(balls.get(i), balls.get(j));
             }
         }
-
+        // Small balls vs player/bot
         for (Ball b : balls) {
-            Ball.resolveCollision(playerBall, b);
-            Ball.resolveCollision(botBall, b);
+            if (playerBall != null) {
+                Ball.resolveCollision(playerBall, b);
+            }
+            if (botBall != null) {
+                Ball.resolveCollision(botBall, b);
+            }
         }
-
-        Ball.resolveCollision(playerBall, botBall);
-    }
-    
-    public List<Ball> getBalls(){
-    	return balls;
-    }
-    
-    public Ball getPlayerBall() {
-    	return playerBall;
+        // Player vs bot
+        if (playerBall != null && botBall != null) {
+            Ball.resolveCollision(playerBall, botBall);
+        }
     }
 
-    public Ball getBotBall() {
-        return botBall;
-    }
-    
-    public Boundary getBounds(){
-        return bounds;
-    }
-
-    public void increasePlayerScore() {
-        playerScore++;
-    }
-
-    public void increaseBotScore() {
-        botScore++;
-    }
-
-    public int getPlayerScore() {
-        return playerScore;
-    }
-
-    public int getBotScore() {
-        return botScore;
-    }
-
-    public List<Hole> getHoles() {
-        return holes;
+    private void checkGameOverConditions() {
+        if (playerBall != null && isInHole(playerBall)) {
+            playerBall = null;
+            setGameOver(GameOverReason.PLAYER_FOUL);
+        } else if (botBall != null && isInHole(botBall)) {
+            botBall = null;
+            setGameOver(GameOverReason.BOT_FOUL);
+        } else if (balls.isEmpty()) {
+            setGameOver(GameOverReason.NO_BALLS_LEFT);
+        }
     }
 
     private boolean isInHole(Ball ball) {
@@ -118,5 +103,60 @@ public class Board {
         double dx = pos.x() - hole.pos().x();
         double dy = pos.y() - hole.pos().y();
         return Math.hypot(dx, dy) < hole.radius();
+    }
+    
+    public List<Ball> getBalls(){
+    	return balls;
+    }
+
+    public List<Hole> getHoles() {
+        return holes;
+    }
+    
+    public Ball getPlayerBall() {
+    	return playerBall;
+    }
+
+    public Ball getBotBall() {
+        return botBall;
+    }
+    
+    public Boundary getBounds(){
+        return bounds;
+    }
+
+    public int getPlayerScore() {
+        return playerScore;
+    }
+
+    public void increasePlayerScore() {
+        playerScore++;
+    }
+
+    public int getBotScore() {
+        return botScore;
+    }
+
+    public void increaseBotScore() {
+        botScore++;
+    }
+
+    public boolean isGameOver() {
+        return gameOver != null;
+    }
+
+    public void addListener(BoardListener listener) {
+        this.listeners.add(listener);
+    }
+
+    private void setGameOver(GameOverReason reason) {
+        gameOver = new GameOver(reason, playerScore, botScore);
+        notifyGameOver(gameOver);
+    }
+
+    private void notifyGameOver(GameOver gameOver) {
+        for (BoardListener listener: listeners) {
+            listener.onGameOver(gameOver);
+        }
     }
 }

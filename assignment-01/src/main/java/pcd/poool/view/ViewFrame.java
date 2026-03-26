@@ -2,14 +2,12 @@ package pcd.poool.view;
 
 import pcd.poool.controller.commands.CommandProcessor;
 import pcd.poool.model.V2d;
-import pcd.poool.controller.MoveCommand;
+import pcd.poool.controller.commands.MoveCommand;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 public class ViewFrame extends JFrame implements KeyListener {
     
@@ -19,26 +17,22 @@ public class ViewFrame extends JFrame implements KeyListener {
 	private final CommandProcessor controller;
 
 	private final boolean[] keys = new boolean[256];
-    
-    public ViewFrame(ViewModel model, int w, int h, CommandProcessor commandProcessor){
-    	this.model = model;
-    	this.sync = new RenderSync();
-    	setTitle("Poool");
-        setSize(w,h + 25);
-        setResizable(false);
-        this.panel = new VisualiserPanel(w,h);
-        getContentPane().add(panel);
-        addWindowListener(new WindowAdapter(){
-			public void windowClosing(WindowEvent ev){
-				System.exit(-1);
-			}
-			public void windowClosed(WindowEvent ev){
-				System.exit(-1);
-			}
-		});
+
+	public ViewFrame(ViewModel model, int width, int height, CommandProcessor commandProcessor){
+		this.model = model;
+		this.sync = new RenderSync();
+		this.panel = new VisualiserPanel(width, height);
 		this.controller = commandProcessor;
-		this.addKeyListener(this);
-    }
+		getContentPane().add(panel);
+		setTitle("Poool");
+		setResizable(false);
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setFocusable(true);
+		requestFocusInWindow();
+		addKeyListener(this);
+		pack();
+		setLocationRelativeTo(null);
+	}
      
     public void render(){
 		long nextFrame = sync.nextFrameToRender();
@@ -86,65 +80,68 @@ public class ViewFrame extends JFrame implements KeyListener {
         private final int ox;
         private final int oy;
         private final int delta;
-        
-        public VisualiserPanel(int w, int h){
-            setSize(w,h + 25);
-            ox = w / 2;
-            oy = h / 2;
+
+        public VisualiserPanel(int width, int height){
+			setPreferredSize(new Dimension(width, height));
+            ox = width / 2;
+            oy = height / 2;
             delta = Math.min(ox, oy);
         }
 
-        public void paint(Graphics g){
-    		Graphics2D g2 = (Graphics2D) g;
-    		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-    		g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-    		g2.clearRect(0, 0, this.getWidth(), this.getHeight());
-    		g2.setColor(Color.LIGHT_GRAY);
-		    g2.setStroke(new BasicStroke(1));
-    		g2.drawLine(ox, 0, ox, oy * 2);
-    		g2.drawLine(0, oy, ox * 2, oy);
-    		g2.setColor(Color.BLACK);
-			for (var hole: model.getHoles()) {
-				int holeRadius = (int)(hole.radius() * delta);
-				int x0 = (int)(ox + hole.pos().x() * delta);
-				int y0 = (int)(oy - hole.pos().y() * delta);
-				g2.fillOval(x0 - holeRadius, y0 - holeRadius, holeRadius * 2, holeRadius * 2);
+		@Override
+		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
+			Graphics2D g2 = (Graphics2D) g;
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+			g2.setColor(Color.LIGHT_GRAY);
+			g2.setStroke(new BasicStroke(1));
+			g2.drawLine(ox, 0, ox, oy * 2);
+			g2.drawLine(0, oy, ox * 2, oy);
+			g2.setColor(Color.BLACK);
+			for (var hole : model.getHoles()) {
+				drawFilledCircle(g2, hole.pos().x(), hole.pos().y(), hole.radius());
 			}
-			for (var ball: model.getBalls()) {
-				var pos = ball.pos();
-				int x0 = (int)(ox + pos.x() * delta);
-				int y0 = (int)(oy - pos.y() * delta);
-				int radiusX = (int)(ball.radius() * delta);
-				int radiusY = (int)(ball.radius() * delta);
-				g2.drawOval(x0 - radiusX, y0 - radiusY, radiusX * 2, radiusY * 2);
+			g2.setStroke(new BasicStroke(1));
+			for (var ball : model.getBalls()) {
+				drawCircle(g2, ball.pos().x(), ball.pos().y(), ball.radius());
 			}
 			g2.setStroke(new BasicStroke(3));
-			var player = model.getPlayerBall();
-			if (player != null) {
-				var pos = player.pos();
-				int x0 = (int)(ox + pos.x() * delta);
-				int y0 = (int)(oy - pos.y() * delta);
-				int radiusX = (int)(player.radius() * delta);
-				int radiusY = (int)(player.radius() * delta);
-				g2.drawOval(x0 - radiusX, y0 - radiusY, radiusX * 2, radiusY * 2);
-				g2.drawString("P", x0 - (radiusX / 3), y0 + (radiusY / 3));
-			}
-			var bot = model.getBotBall();
-			if (bot != null) {
-				var pos = bot.pos();
-				int x0 = (int)(ox + pos.x() * delta);
-				int y0 = (int)(oy - pos.y() * delta);
-				int radiusX = (int)(bot.radius() * delta);
-				int radiusY = (int)(bot.radius() * delta);
-				g2.drawOval(x0 - radiusX, y0 - radiusY, radiusX * 2, radiusY * 2);
-				g2.drawString("B", x0 - (radiusX / 3), y0 + (radiusY / 3));
-			}
+			drawBallWithLetter(g2, model.getPlayerBall(), "P");
+			drawBallWithLetter(g2, model.getBotBall(), "B");
+			drawGameInfo(g2);
+			sync.notifyFrameRendered();
+		}
+
+		private void drawFilledCircle(Graphics2D g2, double x, double y, double radius) {
+			int r = (int) (radius * delta);
+			int x0 = (int) (ox + x * delta);
+			int y0 = (int) (oy - y * delta);
+			g2.fillOval(x0 - r, y0 - r, r * 2, r * 2);
+		}
+
+		private void drawCircle(Graphics2D g2, double x, double y, double radius) {
+			int r = (int) (radius * delta);
+			int x0 = (int) (ox + x * delta);
+			int y0 = (int) (oy - y * delta);
+			g2.drawOval(x0 - r, y0 - r, r * 2, r * 2);
+		}
+
+		private void drawBallWithLetter(Graphics2D g2, BallViewInfo ball, String letter) {
+			if (ball == null) return;
+			int r = (int) (ball.radius() * delta);
+			int x0 = (int) (ox + ball.pos().x() * delta);
+			int y0 = (int) (oy - ball.pos().y() * delta);
+			g2.drawOval(x0 - r, y0 - r, r * 2, r * 2);
+			g2.drawString(letter, (int)(x0 - ball.radius() / 4 * delta), (int)(y0 + ball.radius() / 4 * delta));
+		}
+
+		private void drawGameInfo(Graphics2D g2) {
 			g2.setStroke(new BasicStroke(1));
 			g2.drawString("Num small balls: " + model.getBalls().size(), 50, 40);
 			g2.drawString("Frame per sec: " + model.getFramePerSec(), 50, 60);
 			g2.drawString("Player score: " + model.getPlayerScore(), 50, 80);
 			g2.drawString("Bot score: " + model.getBotScore(), 50, 100);
-			sync.notifyFrameRendered();
-        }
+		}
     }
 }

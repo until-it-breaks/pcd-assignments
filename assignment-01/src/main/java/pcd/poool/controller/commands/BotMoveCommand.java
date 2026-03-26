@@ -1,5 +1,6 @@
 package pcd.poool.controller.commands;
 
+import pcd.poool.model.Ball;
 import pcd.poool.model.Board;
 import pcd.poool.model.V2d;
 
@@ -12,6 +13,9 @@ public class BotMoveCommand implements Command {
 
     @Override
     public void execute(Board board) {
-        board.getBotBall().kick(velocity);
+        Ball botBall = board.getBotBall();
+        if (botBall != null) {
+            botBall.kick(velocity);
+        }
     }
 }
