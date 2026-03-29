@@ -2,7 +2,7 @@ package pcd.poool.controller.commands;
 
 import pcd.poool.util.BoundedBuffer;
 import pcd.poool.util.BoundedBufferImpl;
-import pcd.poool.model.Board;
+import pcd.poool.model.board.Board;
 
 public class CommandProcessor extends Thread {
 

@@ -1,4 +1,8 @@
-package pcd.poool.model;
+package pcd.poool.model.board;
+
+import pcd.poool.model.*;
+import pcd.poool.model.ball.Ball;
+import pcd.poool.model.collision.CollisionResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +18,12 @@ public class Board {
     private int botScore;
     private GameOver gameOver;
 
+    private CollisionResolver collisionResolver;
+
     private final List<BoardListener> listeners = new ArrayList<>();
     
-    public void init(BoardConf conf) {
+    public void init(BoardConf conf, CollisionResolver resolver) {
+        this.collisionResolver = resolver;
     	balls = conf.getSmallBalls();
     	playerBall = conf.getPlayerBall();
         botBall = conf.getBotBall();
@@ -27,10 +34,10 @@ public class Board {
         gameOver = null;
     }
 
-    public void updateState(long dt) {
+    public void updateState(long dt) throws InterruptedException {
         updateMainBalls(dt);
         updateSmallBalls(dt);
-        resolveCollisions();
+        collisionResolver.resolve(balls, playerBall, botBall);
         checkGameOverConditions();
     }
 
@@ -52,28 +59,6 @@ public class Board {
                 balls.remove(i);
                 i--;
             }
-        }
-    }
-
-    private void resolveCollisions() {
-        // Small balls against each other
-        for (int i = 0; i < balls.size() - 1; i++) {
-            for (int j = i + 1; j < balls.size(); j++) {
-                Ball.resolveCollision(balls.get(i), balls.get(j));
-            }
-        }
-        // Small balls vs player/bot
-        for (Ball b : balls) {
-            if (playerBall != null) {
-                Ball.resolveCollision(playerBall, b);
-            }
-            if (botBall != null) {
-                Ball.resolveCollision(botBall, b);
-            }
-        }
-        // Player vs bot
-        if (playerBall != null && botBall != null) {
-            Ball.resolveCollision(playerBall, botBall);
         }
     }
 

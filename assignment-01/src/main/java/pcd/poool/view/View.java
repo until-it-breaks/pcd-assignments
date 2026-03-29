@@ -1,7 +1,7 @@
 package pcd.poool.view;
 
 import pcd.poool.controller.commands.CommandProcessor;
-import pcd.poool.model.Board;
+import pcd.poool.model.board.Board;
 
 import javax.swing.*;
 

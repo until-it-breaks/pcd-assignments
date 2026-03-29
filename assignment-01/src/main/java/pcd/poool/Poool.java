@@ -3,12 +3,14 @@ package pcd.poool;
 import pcd.poool.controller.Bot;
 import pcd.poool.controller.GameEngine;
 import pcd.poool.controller.commands.CommandProcessor;
-import pcd.poool.model.Board;
-import pcd.poool.model.MassiveBoardConf;
+import pcd.poool.model.board.Board;
+import pcd.poool.model.board.LargeBoardConf;
+import pcd.poool.model.board.MassiveBoardConf;
+import pcd.poool.model.board.MinimalBoardConf;
+import pcd.poool.model.collision.RawThreadedCollisionResolver;
+import pcd.poool.model.collision.SequentialCollisionResolver;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
-
-import javax.swing.*;
 
 public class Poool {
 	public static void main(String[] args) {
@@ -19,7 +21,7 @@ public class Poool {
 		 * - massive: 4500 small balls
 		 */
 		Board board = new Board();
-		board.init(new MassiveBoardConf());
+		board.init(new MassiveBoardConf(), new RawThreadedCollisionResolver());
 		ViewModel viewModel = new ViewModel();
 		CommandProcessor commandProcessor = new CommandProcessor(board);
 		View view = new View(viewModel, 1200, 800, commandProcessor, board);

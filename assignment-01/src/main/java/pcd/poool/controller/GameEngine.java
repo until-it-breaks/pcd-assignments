@@ -1,6 +1,6 @@
 package pcd.poool.controller;
 
-import pcd.poool.model.Board;
+import pcd.poool.model.board.Board;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
 
@@ -27,7 +27,11 @@ public class GameEngine extends Thread {
         while (running) {
             long timeElapsed = System.currentTimeMillis() - lastUpdateTime;
             lastUpdateTime = System.currentTimeMillis();
-            board.updateState(timeElapsed);
+            try {
+                board.updateState(timeElapsed);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             numberOfFrames++;
             int framesPerSecond = 0;
             long totalTimeRunning = System.currentTimeMillis() - startTime;

@@ -1,6 +1,6 @@
 package pcd.poool.controller.commands;
 
-import pcd.poool.model.Board;
+import pcd.poool.model.board.Board;
 
 public interface Command {
 	
