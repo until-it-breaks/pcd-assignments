@@ -5,7 +5,7 @@ import pcd.poool.controller.GameEngine;
 import pcd.poool.controller.commands.CommandQueue;
 import pcd.poool.model.board.Board;
 import pcd.poool.model.board.MassiveBoardConf;
-import pcd.poool.model.collision.RawThreadedCollisionResolver;
+import pcd.poool.model.collision.ExecutorCollisionResolver;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
 
@@ -18,7 +18,7 @@ public class Poool {
 		 * - massive: 4500 small balls
 		 */
 		Board board = new Board();
-		board.init(new MassiveBoardConf(), new RawThreadedCollisionResolver());
+		board.init(new MassiveBoardConf(), new ExecutorCollisionResolver());
 		CommandQueue commandQueue = new CommandQueue();
 		View view = new View(new ViewModel(), 1200, 800, commandQueue, board);
 

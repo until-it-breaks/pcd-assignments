@@ -19,6 +19,7 @@ public class Board {
     private GameOver gameOver;
 
     private CollisionResolver collisionResolver;
+    private final List<Ball> collisionGroup = new ArrayList<>();
 
     private final List<BoardListener> listeners = new ArrayList<>();
     
@@ -37,8 +38,12 @@ public class Board {
     public void updateState(long dt) {
         updateMainBalls(dt);
         updateSmallBalls(dt);
+        collisionGroup.clear();
+        if (playerBall != null) collisionGroup.add(playerBall);
+        if (botBall != null) collisionGroup.add(botBall);
+        collisionGroup.addAll(balls);
         try {
-            collisionResolver.resolve(balls, playerBall, botBall);
+            collisionResolver.resolve(collisionGroup);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -55,15 +60,17 @@ public class Board {
             Ball ball = balls.get(i);
             ball.updateState(dt, this);
             if (isInHole(ball)) {
-                Ball last = ball.getLastCollider();
-                if (last != null) {
-                    if (last == playerBall) increasePlayerScore();
-                    else if (last == botBall) increaseBotScore();
-                }
+                handleScoring(ball);
                 balls.remove(i);
                 i--;
             }
         }
+    }
+
+    private void handleScoring(Ball ball) {
+        Ball last = ball.getLastCollider();
+        if (last == playerBall) increasePlayerScore();
+        else if (last == botBall) increaseBotScore();
     }
 
     private void checkGameOverConditions() {

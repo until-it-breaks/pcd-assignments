@@ -11,7 +11,7 @@ public class Balls {
         executePhysics(a, b);
     }
 
-    public static void resolveCollisionsSafe(Ball a, Ball b) {
+    public static void resolveCollisionSafely(Ball a, Ball b) {
         Ball first = (a.getId() < b.getId()) ? a : b;
         Ball second = (a.getId() < b.getId()) ? b : a;
         synchronized(first) {

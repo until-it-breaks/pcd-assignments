@@ -7,33 +7,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RawThreadedCollisionResolver implements CollisionResolver {
-    @Override
-    public void resolve(List<Ball> balls, Ball player, Ball bot) throws InterruptedException {
-        int threadCount = Runtime.getRuntime().availableProcessors() + 1;
+
+    private final int threadCount = Runtime.getRuntime().availableProcessors();
+
+    public void resolve(List<Ball> balls) throws InterruptedException {
+        int n = balls.size();
         List<Thread> threads = new ArrayList<>(threadCount);
         for (int i = 0; i < threadCount; i++) {
-            final int offset = i;
-            threads.add(i, new Thread(() -> {
-                for (int j = offset; j < balls.size() - 1; j += threadCount) {
-                    Ball b1 = balls.get(j);
-                    for (int k = j + 1; k < balls.size(); k++) {
-                        Balls.resolveCollisionsSafe(b1, balls.get(k));
-                    }
-                    if (player != null) {
-                        Balls.resolveCollisionsSafe(player, b1);
-                    }
-                    if (bot != null) {
-                        Balls.resolveCollisionsSafe(bot, b1);
-                    }
+            final int threadIndex = i;
+            threads.add(new Thread(() -> {
+                for (int j = threadIndex; j < n / 2; j += threadCount) {
+                    processRow(j, balls);           // Heavy row
+                    processRow(n - 1 - j, balls);   // Light row
+                }
+                // Handle middle row for odd counts
+                if (n % 2 != 0 && threadIndex == 0) {
+                    processRow(n / 2, balls);
                 }
             }));
             threads.get(i).start();
         }
-        for (Thread thread: threads) {
-            thread.join();
-        }
-        if (player != null && bot != null) {
-            Balls.resolveCollisionFast(player, bot);
+        for (Thread t : threads) t.join();
+    }
+
+    private void processRow(int i, List<Ball> balls) {
+        Ball ball = balls.get(i);
+        for (int j = i + 1; j < balls.size(); j++) {
+            Balls.resolveCollisionSafely(ball, balls.get(j));
         }
     }
 }
