@@ -26,7 +26,7 @@ public class ViewFrame extends JFrame implements KeyListener {
 		getContentPane().add(panel);
 		setTitle("Poool");
 		setResizable(false);
-		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setFocusable(true);
 		requestFocusInWindow();
 		addKeyListener(this);
