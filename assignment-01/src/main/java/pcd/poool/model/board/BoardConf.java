@@ -1,6 +1,7 @@
 package pcd.poool.model.board;
 
-import pcd.poool.model.Hole;
+import pcd.poool.model.common.Boundary;
+import pcd.poool.model.common.Hole;
 import pcd.poool.model.ball.Ball;
 
 import java.util.List;

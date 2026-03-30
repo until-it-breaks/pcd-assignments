@@ -2,7 +2,7 @@ package pcd.poool.controller.commands;
 
 import pcd.poool.model.ball.Ball;
 import pcd.poool.model.board.Board;
-import pcd.poool.model.V2d;
+import pcd.poool.model.common.V2d;
 
 public class BotMoveCommand implements Command {
     private final V2d velocity;

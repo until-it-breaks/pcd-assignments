@@ -1,9 +1,9 @@
 package pcd.poool.model.ball;
 
 import pcd.poool.model.board.Board;
-import pcd.poool.model.board.Boundary;
-import pcd.poool.model.P2d;
-import pcd.poool.model.V2d;
+import pcd.poool.model.common.Boundary;
+import pcd.poool.model.common.P2d;
+import pcd.poool.model.common.V2d;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

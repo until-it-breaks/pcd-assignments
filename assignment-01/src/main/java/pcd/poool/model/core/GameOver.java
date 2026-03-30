@@ -1,4 +1,4 @@
-package pcd.poool.model;
+package pcd.poool.model.core;
 
 public record GameOver(GameOverReason reason, int playerScore, int botScore) {
 

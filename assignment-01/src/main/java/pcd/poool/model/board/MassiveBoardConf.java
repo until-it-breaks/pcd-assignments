@@ -1,8 +1,9 @@
 package pcd.poool.model.board;
 
-import pcd.poool.model.Hole;
-import pcd.poool.model.P2d;
-import pcd.poool.model.V2d;
+import pcd.poool.model.common.Boundary;
+import pcd.poool.model.common.Hole;
+import pcd.poool.model.common.P2d;
+import pcd.poool.model.common.V2d;
 import pcd.poool.model.ball.Ball;
 import pcd.poool.model.ball.BallImplementation;
 

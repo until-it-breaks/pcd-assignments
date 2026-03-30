@@ -3,7 +3,7 @@ package pcd.poool.controller;
 import pcd.poool.controller.commands.BotMoveCommand;
 import pcd.poool.controller.commands.CommandQueue;
 import pcd.poool.model.board.Board;
-import pcd.poool.model.V2d;
+import pcd.poool.model.common.V2d;
 
 import java.util.Random;
 

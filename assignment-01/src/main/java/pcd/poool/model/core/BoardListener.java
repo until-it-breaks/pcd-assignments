@@ -1,6 +1,4 @@
-package pcd.poool.model.board;
-
-import pcd.poool.model.GameOver;
+package pcd.poool.model.core;
 
 public interface BoardListener {
     void onGameOver(GameOver gameOver);

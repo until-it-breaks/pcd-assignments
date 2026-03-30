@@ -1,4 +1,4 @@
-package pcd.poool.model;
+package pcd.poool.model.core;
 
 public enum GameOverReason {
     PLAYER_FOUL,

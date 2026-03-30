@@ -1,7 +1,7 @@
 package pcd.poool.view;
 
 import pcd.poool.controller.commands.CommandQueue;
-import pcd.poool.model.V2d;
+import pcd.poool.model.common.V2d;
 import pcd.poool.controller.commands.MoveCommand;
 
 import javax.swing.*;

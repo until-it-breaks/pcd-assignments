@@ -2,7 +2,7 @@ package pcd.poool.view;
 
 import pcd.poool.model.ball.Ball;
 import pcd.poool.model.board.Board;
-import pcd.poool.model.Hole;
+import pcd.poool.model.common.Hole;
 
 import java.util.ArrayList;
 import java.util.List;

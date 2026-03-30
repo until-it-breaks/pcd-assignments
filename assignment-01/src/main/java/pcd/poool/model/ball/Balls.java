@@ -1,7 +1,7 @@
 package pcd.poool.model.ball;
 
-import pcd.poool.model.P2d;
-import pcd.poool.model.V2d;
+import pcd.poool.model.common.P2d;
+import pcd.poool.model.common.V2d;
 
 public class Balls {
 
