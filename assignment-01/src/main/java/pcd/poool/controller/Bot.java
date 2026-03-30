@@ -1,22 +1,21 @@
 package pcd.poool.controller;
 
 import pcd.poool.controller.commands.BotMoveCommand;
-import pcd.poool.controller.commands.CommandProcessor;
+import pcd.poool.controller.commands.CommandQueue;
 import pcd.poool.model.board.Board;
 import pcd.poool.model.V2d;
 
 import java.util.Random;
 
-public class Bot extends Thread {
+public class Bot implements Runnable {
     private final Board board;
-    private final CommandProcessor commandProcessor;
+    private final CommandQueue commandQueue;
     private final Random random;
     private volatile boolean running;
 
-    public Bot(Board board, CommandProcessor commandProcessor) {
-        super("BotThread");
+    public Bot(Board board, CommandQueue commandQueue) {
         this.board = board;
-        this.commandProcessor = commandProcessor;
+        this.commandQueue = commandQueue;
         this.random = new Random();
         this.running = true;
     }
@@ -28,7 +27,7 @@ public class Bot extends Thread {
             if (botBall != null) {
                 double angle = random.nextDouble() * Math.PI * 2;
                 V2d velocity = new V2d(Math.cos(angle), Math.sin(angle)).mul(1.5);
-                commandProcessor.notifyNewCommand(new BotMoveCommand(velocity));
+                commandQueue.notifyNewCommand(new BotMoveCommand(velocity));
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {

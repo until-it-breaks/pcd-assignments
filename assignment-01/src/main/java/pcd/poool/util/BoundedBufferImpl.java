@@ -33,6 +33,14 @@ public class BoundedBufferImpl<Item> implements BoundedBuffer<Item> {
 		return item;
 	}
 
+	public synchronized Item poll() {
+		Item item = buffer.pollFirst();
+		if (item != null) {
+			notifyAll();
+		}
+		return item;
+	}
+
 	private boolean isFull() {
 		return buffer.size() == maxSize;
 	}

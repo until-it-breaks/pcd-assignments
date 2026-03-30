@@ -1,6 +1,6 @@
 package pcd.poool.view;
 
-import pcd.poool.controller.commands.CommandProcessor;
+import pcd.poool.controller.commands.CommandQueue;
 import pcd.poool.model.board.Board;
 
 import javax.swing.*;
@@ -10,7 +10,7 @@ public class View {
 	private final ViewFrame frame;
 	private final ViewModel viewModel;
 	
-	public View(ViewModel model, int width, int height, CommandProcessor controller, Board board) {
+	public View(ViewModel model, int width, int height, CommandQueue controller, Board board) {
 		this.frame = new ViewFrame(model, width, height, controller);
 		this.frame.setVisible(true);
 		this.viewModel = model;

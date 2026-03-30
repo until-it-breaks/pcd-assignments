@@ -1,6 +1,6 @@
 package pcd.poool.view;
 
-import pcd.poool.controller.commands.CommandProcessor;
+import pcd.poool.controller.commands.CommandQueue;
 import pcd.poool.model.V2d;
 import pcd.poool.controller.commands.MoveCommand;
 
@@ -14,11 +14,11 @@ public class ViewFrame extends JFrame implements KeyListener {
     private final VisualiserPanel panel;
     private final ViewModel model;
     private final RenderSync sync;
-	private final CommandProcessor controller;
+	private final CommandQueue controller;
 
 	private final boolean[] keys = new boolean[256];
 
-	public ViewFrame(ViewModel model, int width, int height, CommandProcessor commandProcessor){
+	public ViewFrame(ViewModel model, int width, int height, CommandQueue commandProcessor){
 		this.model = model;
 		this.sync = new RenderSync();
 		this.panel = new VisualiserPanel(width, height);

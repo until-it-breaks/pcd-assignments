@@ -34,10 +34,14 @@ public class Board {
         gameOver = null;
     }
 
-    public void updateState(long dt) throws InterruptedException {
+    public void updateState(long dt) {
         updateMainBalls(dt);
         updateSmallBalls(dt);
-        collisionResolver.resolve(balls, playerBall, botBall);
+        try {
+            collisionResolver.resolve(balls, playerBall, botBall);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         checkGameOverConditions();
     }
 

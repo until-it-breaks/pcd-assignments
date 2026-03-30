@@ -2,13 +2,10 @@ package pcd.poool;
 
 import pcd.poool.controller.Bot;
 import pcd.poool.controller.GameEngine;
-import pcd.poool.controller.commands.CommandProcessor;
+import pcd.poool.controller.commands.CommandQueue;
 import pcd.poool.model.board.Board;
-import pcd.poool.model.board.LargeBoardConf;
 import pcd.poool.model.board.MassiveBoardConf;
-import pcd.poool.model.board.MinimalBoardConf;
 import pcd.poool.model.collision.RawThreadedCollisionResolver;
-import pcd.poool.model.collision.SequentialCollisionResolver;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
 
@@ -22,19 +19,22 @@ public class Poool {
 		 */
 		Board board = new Board();
 		board.init(new MassiveBoardConf(), new RawThreadedCollisionResolver());
-		ViewModel viewModel = new ViewModel();
-		CommandProcessor commandProcessor = new CommandProcessor(board);
-		View view = new View(viewModel, 1200, 800, commandProcessor, board);
-		Bot bot = new Bot(board, commandProcessor);
-		GameEngine engine = new GameEngine(board, viewModel, view);
+		CommandQueue commandQueue = new CommandQueue();
+		View view = new View(new ViewModel(), 1200, 800, commandQueue, board);
 
-		engine.start();
-		commandProcessor.start();
-		bot.start();
+		Bot bot = new Bot(board, commandQueue);
+		Thread botThread = new Thread(bot);
+		botThread.setName("BotThread");
+
+		GameEngine gameEngine = new GameEngine(commandQueue, board, view);
+		Thread gameEngineThread = new Thread(gameEngine);
+		gameEngineThread.setName("GameEngineThread");
+
+		gameEngineThread.start();
+		botThread.start();
 
 		board.addListener(gameOver -> {
-			engine.stopEngine();
-			commandProcessor.stopProcessor();
+			gameEngine.stopEngine();
 			bot.stopBot();
 		});
 	}
