@@ -13,7 +13,7 @@ public class SequentialCollisionResolver implements CollisionResolver {
         for (int i = 0; i < n; i++) {
             Ball ball = balls.get(i);
             for (int j = i + 1; j < n; j++) {
-                Balls.resolveCollisionFast(ball, balls.get(j));
+                Balls.resolveCollisionUnsafe(ball, balls.get(j));
             }
         }
     }
