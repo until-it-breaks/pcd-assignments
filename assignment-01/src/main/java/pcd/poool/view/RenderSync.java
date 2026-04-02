@@ -9,6 +9,7 @@ public class RenderSync {
 		nextFrameToRender = 0;
 		lastFrameRendered = -1;
 	}
+
 	public synchronized long nextFrameToRender() {
 		long f = nextFrameToRender;
 		nextFrameToRender++;

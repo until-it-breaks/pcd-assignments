@@ -1,13 +1,16 @@
-package pcd.poool.controller;
+package pcd.poool.controller.ai;
 
 import pcd.poool.controller.commands.BotMoveCommand;
 import pcd.poool.controller.commands.CommandQueue;
+import pcd.poool.controller.engine.GameEngineListener;
+import pcd.poool.controller.engine.GameOverEvent;
+import pcd.poool.controller.engine.EngineTimeoutEvent;
 import pcd.poool.model.board.Board;
 import pcd.poool.model.common.V2d;
 
 import java.util.Random;
 
-public class Bot implements Runnable {
+public class Bot implements Runnable, GameEngineListener {
     private final Board board;
     private final CommandQueue commandQueue;
     private final Random random;
@@ -37,7 +40,13 @@ public class Bot implements Runnable {
         }
     }
 
-    public void stopBot() {
+    @Override
+    public void onEngineTimeout(EngineTimeoutEvent event) {
+        running = false;
+    }
+
+    @Override
+    public void onGameOver(GameOverEvent event) {
         running = false;
     }
 }

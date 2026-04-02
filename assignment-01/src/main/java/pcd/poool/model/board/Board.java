@@ -5,7 +5,6 @@ import pcd.poool.model.collision.CollisionResolver;
 import pcd.poool.model.common.Boundary;
 import pcd.poool.model.common.Hole;
 import pcd.poool.model.common.P2d;
-import pcd.poool.model.core.BoardListener;
 import pcd.poool.model.core.GameOver;
 import pcd.poool.model.core.GameOverReason;
 
@@ -21,12 +20,11 @@ public class Board {
     private Boundary bounds;
     private int playerScore;
     private int botScore;
+
     private GameOver gameOver;
 
     private CollisionResolver collisionResolver;
     private final List<Ball> collisionGroup = new ArrayList<>();
-
-    private final List<BoardListener> listeners = new ArrayList<>();
     
     public void init(BoardConf conf, CollisionResolver resolver) {
         this.collisionResolver = resolver;
@@ -146,18 +144,11 @@ public class Board {
         return gameOver != null;
     }
 
-    public void addListener(BoardListener listener) {
-        this.listeners.add(listener);
+    public GameOver getGameOver() {
+        return gameOver;
     }
 
     private void setGameOver(GameOverReason reason) {
         gameOver = new GameOver(reason, playerScore, botScore);
-        notifyGameOver(gameOver);
-    }
-
-    private void notifyGameOver(GameOver gameOver) {
-        for (BoardListener listener: listeners) {
-            listener.onGameOver(gameOver);
-        }
     }
 }

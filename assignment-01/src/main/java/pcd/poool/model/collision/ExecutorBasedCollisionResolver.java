@@ -1,5 +1,8 @@
 package pcd.poool.model.collision;
 
+import pcd.poool.controller.engine.GameEngineListener;
+import pcd.poool.controller.engine.GameOverEvent;
+import pcd.poool.controller.engine.EngineTimeoutEvent;
 import pcd.poool.model.ball.Ball;
 import pcd.poool.model.ball.Balls;
 
@@ -8,7 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ExecutorBasedCollisionResolver implements CollisionResolver {
+public class ExecutorBasedCollisionResolver implements CollisionResolver, GameEngineListener {
 
     private final int threadCount = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -42,5 +45,15 @@ public class ExecutorBasedCollisionResolver implements CollisionResolver {
         for (int j = i + 1; j < balls.size(); j++) {
             Balls.resolveCollisionSynchronized(ball, balls.get(j));
         }
+    }
+
+    @Override
+    public void onEngineTimeout(EngineTimeoutEvent event) {
+        executor.shutdown();
+    }
+
+    @Override
+    public void onGameOver(GameOverEvent event) {
+        executor.shutdown();
     }
 }
