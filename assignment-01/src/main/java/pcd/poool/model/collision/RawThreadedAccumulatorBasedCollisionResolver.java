@@ -41,24 +41,32 @@ public class RawThreadedAccumulatorBasedCollisionResolver implements CollisionRe
         }
         for (Thread thread : threads) thread.join();
 
-        for (int i = 0; i < n; i++) {
-            double dx = 0, dy = 0, dvx = 0, dvy = 0;
-            Set<Ball> colliders = new HashSet<>();
-            for (int j = 0; j < threadCount; j++) {
-                CollisionAccumulator acc = accumulatorMatrix[j][i];
-                dx += acc.getDeltaX();
-                dy += acc.getDeltaY();
-                dvx += acc.getDeltaVX();
-                dvy += acc.getDeltaVY();
-                colliders.addAll(acc.getColliders());
-            }
-            Ball ball = balls.get(i);
-            ball.setPos(new P2d(ball.getPos().x() + dx, ball.getPos().y() + dy));
-            ball.setVel(new V2d(ball.getVel().x() + dvx, ball.getVel().y() + dvy));
-            if (!colliders.isEmpty()) {
-                ball.setLastColliders(colliders);
-            }
+        List<Thread> reductionThreads = new ArrayList<>();
+        for (int i = 0; i < threadCount; i++) {
+            final int index = i;
+            reductionThreads.add(new Thread(() -> {
+                for (int ballIndex = index; ballIndex < n; ballIndex += threadCount) {
+                    double dx = 0, dy = 0, dvx = 0, dvy = 0;
+                    Set<Ball> colliders = new HashSet<>();
+                    for (int accumulatorIndex = 0; accumulatorIndex < threadCount; accumulatorIndex++) {
+                        CollisionAccumulator acc = accumulatorMatrix[accumulatorIndex][ballIndex];
+                        dx += acc.getDeltaX();
+                        dy += acc.getDeltaY();
+                        dvx += acc.getDeltaVX();
+                        dvy += acc.getDeltaVY();
+                        colliders.addAll(acc.getColliders());
+                    }
+                    Ball ball = balls.get(ballIndex);
+                    ball.setPos(new P2d(ball.getPos().x() + dx, ball.getPos().y() + dy));
+                    ball.setVel(new V2d(ball.getVel().x() + dvx, ball.getVel().y() + dvy));
+                    if (!colliders.isEmpty()) {
+                        ball.setLastColliders(colliders);
+                    }
+                }
+            }));
+            reductionThreads.get(i).start();
         }
+        for (Thread thread : reductionThreads) thread.join();
     }
 
     private void processRow(int i, List<Ball> balls, CollisionAccumulator[] accumulators) {
