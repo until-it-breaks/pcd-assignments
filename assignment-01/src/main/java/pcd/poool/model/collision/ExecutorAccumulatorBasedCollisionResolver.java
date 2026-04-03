@@ -1,8 +1,5 @@
 package pcd.poool.model.collision;
 
-import pcd.poool.controller.engine.EngineTimeoutEvent;
-import pcd.poool.controller.engine.GameEngineListener;
-import pcd.poool.controller.engine.GameOverEvent;
 import pcd.poool.model.ball.Ball;
 import pcd.poool.model.ball.Balls;
 import pcd.poool.model.common.P2d;
@@ -15,7 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ExecutorAccumulatorBasedCollisionResolver implements CollisionResolver, GameEngineListener {
+public class ExecutorAccumulatorBasedCollisionResolver implements CollisionResolver, AutoCloseable {
 
     private final int threadCount = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -93,12 +90,7 @@ public class ExecutorAccumulatorBasedCollisionResolver implements CollisionResol
     }
 
     @Override
-    public void onEngineTimeout(EngineTimeoutEvent event) {
-        executor.shutdown();
-    }
-
-    @Override
-    public void onGameOver(GameOverEvent event) {
+    public void close() {
         executor.shutdown();
     }
 }
