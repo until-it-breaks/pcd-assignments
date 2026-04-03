@@ -4,6 +4,8 @@ import pcd.poool.model.board.Board;
 import pcd.poool.model.common.P2d;
 import pcd.poool.model.common.V2d;
 
+import java.util.Set;
+
 public interface Ball {
     int getId();
 
@@ -19,9 +21,9 @@ public interface Ball {
 
     double getMass();
 
-    Ball getLastCollider();
+    Set<Ball> getLastColliders();
 
-    void setLastCollider(Ball lastCollider);
+    void setLastColliders(Set<Ball> lastColliders);
 
     void kick(V2d vel);
 

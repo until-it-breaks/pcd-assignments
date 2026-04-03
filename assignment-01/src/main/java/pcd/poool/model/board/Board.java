@@ -10,6 +10,7 @@ import pcd.poool.model.core.GameOverReason;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Board {
 
@@ -71,9 +72,9 @@ public class Board {
     }
 
     private void handleScoring(Ball ball) {
-        Ball last = ball.getLastCollider();
-        if (last == playerBall) increasePlayerScore();
-        else if (last == botBall) increaseBotScore();
+        Set<Ball> lastColliders = ball.getLastColliders();
+        if (lastColliders.contains(playerBall)) increasePlayerScore();
+        if (lastColliders.contains(botBall)) increaseBotScore();
     }
 
     private void checkGameOverConditions() {

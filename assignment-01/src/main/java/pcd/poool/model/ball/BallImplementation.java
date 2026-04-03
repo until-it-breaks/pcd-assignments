@@ -5,6 +5,9 @@ import pcd.poool.model.common.Boundary;
 import pcd.poool.model.common.P2d;
 import pcd.poool.model.common.V2d;
 
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BallImplementation implements Ball {
@@ -13,7 +16,7 @@ public class BallImplementation implements Ball {
     private V2d vel;
     private final double radius;
     private final double mass;
-    private Ball lastCollider;
+    private Set<Ball> lastColliders;
     private static final double FRICTION_FACTOR = 0.25; 	/* 0 minimum */
 
     private static final AtomicInteger ID_GENERATOR = new AtomicInteger(0);
@@ -23,6 +26,7 @@ public class BallImplementation implements Ball {
         this.radius = radius;
         this.mass = mass;
         this.vel = vel;
+        this.lastColliders = new HashSet<>();
         this.id = ID_GENERATOR.getAndIncrement();
     }
 
@@ -97,17 +101,35 @@ public class BallImplementation implements Ball {
     }
 
     @Override
-    public Ball getLastCollider() {
-        return lastCollider;
+    public Set<Ball> getLastColliders() {
+        return lastColliders;
     }
 
     @Override
-    public void setLastCollider(Ball lastCollider) {
-        this.lastCollider = lastCollider;
+    public void setLastColliders(Set<Ball> lastColliders) {
+        this.lastColliders = lastColliders;
     }
 
     @Override
     public int getId() {
         return this.id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof BallImplementation that)) return false;
+        return id == that.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
+
+    @Override
+    public String toString() {
+        return "BallImplementation{" +
+                "id=" + id +
+                '}';
     }
 }

@@ -5,6 +5,7 @@ import pcd.poool.model.common.P2d;
 import pcd.poool.model.common.V2d;
 
 import java.util.List;
+import java.util.Set;
 
 public class Balls {
 
@@ -41,8 +42,8 @@ public class Balls {
          *
          */
         if (dist < minD && dist > 1e-6) {
-            a.setLastCollider(b);
-            b.setLastCollider(a);
+            a.setLastColliders(Set.of(b));
+            b.setLastColliders(Set.of(a));
 
             /*
              * Collision case - what to do:
@@ -94,7 +95,7 @@ public class Balls {
         }
     }
 
-    public static void calculateCollision(int indexA, int indexB, List<Ball> balls, List<CollisionAccumulator> accumulators) {
+    public static void calculateCollision(int indexA, int indexB, List<Ball> balls, CollisionAccumulator[] accumulators) {
         Ball a = balls.get(indexA);
         Ball b = balls.get(indexB);
         double dx = b.getPos().x() - a.getPos().x();
@@ -103,9 +104,6 @@ public class Balls {
         double minD = a.getRadius() + b.getRadius();
 
         if (dist < minD && dist > 1e-6) {
-            a.setLastCollider(b);
-            b.setLastCollider(a);
-
             double nx = dx / dist;
             double ny = dy / dist;
 
@@ -133,11 +131,13 @@ public class Balls {
                 b_dvx = (imp / b.getMass()) * nx;
                 b_dvy = (imp / b.getMass()) * ny;
             }
-            CollisionAccumulator accumulatorA = accumulators.get(indexA);
-            CollisionAccumulator accumulatorB = accumulators.get(indexB);
+            CollisionAccumulator accumulatorA = accumulators[indexA];
+            CollisionAccumulator accumulatorB = accumulators[indexB];
 
             accumulatorA.add(a_dx, a_dy, a_dvx, a_dvy);
+            accumulatorA.addCollider(b);
             accumulatorB.add(b_dx, b_dy, b_dvx, b_dvy);
+            accumulatorB.addCollider(a);
         }
     }
 }
