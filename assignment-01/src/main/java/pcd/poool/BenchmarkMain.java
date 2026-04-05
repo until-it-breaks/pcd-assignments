@@ -21,7 +21,7 @@ public class BenchmarkMain {
 
     public static void main(String[] args) {
         Board board = new Board();
-        /**
+        /*
          * Available collision resolvers:
          * - SequentialCollisionResolver
          * - RawThreadedCollisionResolver
@@ -55,11 +55,12 @@ public class BenchmarkMain {
             }
 
             private void shutdown() {
-                AutoCloseable closeable = (AutoCloseable) resolver;
-                try {
-                    closeable.close();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                if (resolver instanceof AutoCloseable closeable) {
+                    try {
+                        closeable.close();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         });

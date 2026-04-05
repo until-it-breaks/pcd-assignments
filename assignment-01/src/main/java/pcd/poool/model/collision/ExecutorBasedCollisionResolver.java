@@ -15,20 +15,24 @@ public class ExecutorBasedCollisionResolver implements CollisionResolver, AutoCl
 
     @Override
     public void resolve(List<Ball> balls) throws InterruptedException {
-        int n = balls.size();
-        CountDownLatch latch = new CountDownLatch(threadCount);
-        for (int i = 0; i < threadCount; i++) {
-            final int threadIndex = i;
-            executor.submit(() -> {
+        int ballCount = balls.size();
+        int taskCount = ballCount / 2;
+        CountDownLatch latch = new CountDownLatch(taskCount + (ballCount % 2));
+        for (int j = 0; j < ballCount / 2; j++) {
+            final int row = j;
+            executor.execute(() -> {
                 try {
-                    for (int j = threadIndex; j < n / 2; j += threadCount) {
-                        processRow(j, balls);           // Heavy row
-                        processRow(n - 1 - j, balls);   // Light row
-                    }
-                    // Handle middle row for odd counts
-                    if (n % 2 != 0 && threadIndex == 0) {
-                        processRow(n / 2, balls);
-                    }
+                    processRow(row, balls);           // Heavy
+                    processRow(ballCount - 1 - row, balls);   // Light
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+        if (ballCount % 2 != 0) {
+            executor.execute(() -> {
+                try {
+                    processRow(ballCount / 2, balls);
                 } finally {
                     latch.countDown();
                 }

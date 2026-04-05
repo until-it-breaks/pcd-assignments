@@ -8,8 +8,7 @@ import pcd.poool.controller.engine.GameEngineListener;
 import pcd.poool.controller.engine.GameOverEvent;
 import pcd.poool.model.board.Board;
 import pcd.poool.model.board.MassiveBoardConf;
-import pcd.poool.model.collision.CollisionResolver;
-import pcd.poool.model.collision.ExecutorAccumulatorBasedCollisionResolver;
+import pcd.poool.model.collision.*;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
 
@@ -50,12 +49,12 @@ public class Poool {
 
 			private void shutdown() {
 				if (resolver instanceof AutoCloseable closeable) {
-					try {
-						closeable.close();
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
-				}
+                    try {
+                        closeable.close();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
 			}
 		});
 
