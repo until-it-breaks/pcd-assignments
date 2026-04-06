@@ -60,7 +60,7 @@ public class RawThreadedAccumulatorBasedCollisionResolver implements CollisionRe
                     ball.setPos(new P2d(ball.getPos().x() + dx, ball.getPos().y() + dy));
                     ball.setVel(new V2d(ball.getVel().x() + dvx, ball.getVel().y() + dvy));
                     if (!colliders.isEmpty()) {
-                        ball.setLastColliders(colliders);
+                        ball.setLatestColliders(colliders);
                     }
                 }
             }));
@@ -71,7 +71,7 @@ public class RawThreadedAccumulatorBasedCollisionResolver implements CollisionRe
 
     private void processRow(int i, List<Ball> balls, CollisionAccumulator[] accumulators) {
         for (int j = i + 1; j < balls.size(); j++) {
-            Balls.calculateCollision(i, j, balls, accumulators);
+            Balls.resolveCollisionWithAccumulators(i, j, balls, accumulators);
         }
     }
 }

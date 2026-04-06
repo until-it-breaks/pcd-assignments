@@ -101,12 +101,12 @@ public class BallImplementation implements Ball {
     }
 
     @Override
-    public Set<Ball> getLastColliders() {
+    public Set<Ball> getLatestColliders() {
         return lastColliders;
     }
 
     @Override
-    public void setLastColliders(Set<Ball> lastColliders) {
+    public void setLatestColliders(Set<Ball> lastColliders) {
         this.lastColliders = lastColliders;
     }
 
@@ -128,8 +128,6 @@ public class BallImplementation implements Ball {
 
     @Override
     public String toString() {
-        return "BallImplementation{" +
-                "id=" + id +
-                '}';
+        return "BallImplementation{" + "id=" + id + '}';
     }
 }

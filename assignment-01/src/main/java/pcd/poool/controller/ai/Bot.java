@@ -13,14 +13,12 @@ import java.util.Random;
 public class Bot implements Runnable, GameEngineListener {
     private final Board board;
     private final CommandQueue commandQueue;
-    private final Random random;
-    private volatile boolean running;
+    private final Random random = new Random();
+    private volatile boolean running = true;
 
     public Bot(Board board, CommandQueue commandQueue) {
         this.board = board;
         this.commandQueue = commandQueue;
-        this.random = new Random();
-        this.running = true;
     }
 
     @Override

@@ -10,19 +10,17 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class ViewFrame extends JFrame implements KeyListener {
-    
     private final VisualiserPanel panel;
     private final ViewModel model;
-    private final RenderSync sync;
+    private final RenderSync sync= new RenderSync();
 	private final CommandQueue controller;
 
 	private final boolean[] keys = new boolean[256];
 
-	public ViewFrame(ViewModel model, int width, int height, CommandQueue commandProcessor){
+	public ViewFrame(ViewModel model, int width, int height, CommandQueue commandQueue){
 		this.model = model;
-		this.sync = new RenderSync();
 		this.panel = new VisualiserPanel(width, height);
-		this.controller = commandProcessor;
+		this.controller = commandQueue;
 		getContentPane().add(panel);
 		setTitle("Poool");
 		setResizable(false);
@@ -65,12 +63,10 @@ public class ViewFrame extends JFrame implements KeyListener {
 		double vx = 0;
 		double vy = 0;
 		double speed = 1.0;
-
 		if (keys[KeyEvent.VK_W]) vy += speed;
 		if (keys[KeyEvent.VK_S]) vy -= speed;
 		if (keys[KeyEvent.VK_A]) vx -= speed;
 		if (keys[KeyEvent.VK_D]) vx += speed;
-
 		if (vx != 0 || vy != 0) {
 			controller.notifyNewCommand(new MoveCommand(new V2d(vx, vy)));
 		}

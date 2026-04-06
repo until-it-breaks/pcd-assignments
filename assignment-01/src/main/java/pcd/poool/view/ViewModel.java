@@ -8,24 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ViewModel {
-
-	private final List<BallViewInfo> balls;
-	private List<Hole> holes;
+	private final List<BallViewInfo> balls = new ArrayList<>();
+	private List<Hole> holes = new ArrayList<>();
 	private BallViewInfo player;
 	private BallViewInfo bot;
-	private int framePerSec;
-	private int playerScore;
-	private int botScore;
-	
-	public ViewModel() {
-		balls = new ArrayList<>();
-		holes = new ArrayList<>();
-		player = null;
-		bot = null;
-		framePerSec = 0;
-		playerScore = 0;
-		botScore = 0;
-	}
+	private int framePerSec = 0;
+	private int playerScore = 0;
+	private int botScore = 0;
 	
 	public synchronized void update(Board board, int framePerSec) {
 		balls.clear();

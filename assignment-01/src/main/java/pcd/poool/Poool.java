@@ -12,10 +12,9 @@ import pcd.poool.model.collision.*;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
 
+import static pcd.poool.controller.engine.GameEngine.UNLIMITED_SIMULATION_TIME;
+
 public class Poool {
-
-	public static final int UNLIMITED_SIMULATION_TIME = 0;
-
 	public static void main(String[] args) {
 		/*
 		 * Different board configs to try:

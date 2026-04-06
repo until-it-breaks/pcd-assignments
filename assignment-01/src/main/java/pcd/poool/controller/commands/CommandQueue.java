@@ -7,12 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CommandQueue {
-
-	private final BoundedBuffer<Command> buffer;
-	
-	public CommandQueue() {
-		this.buffer = new BoundedBufferImpl<>(100);
-	}
+	public static final int COMMAND_LIMIT = 100;
+	private final BoundedBuffer<Command> buffer = new BoundedBufferImpl<>(COMMAND_LIMIT);
 	
 	public void notifyNewCommand(Command command) {
 		try {

@@ -21,9 +21,9 @@ public interface Ball {
 
     double getMass();
 
-    Set<Ball> getLastColliders();
+    Set<Ball> getLatestColliders();
 
-    void setLastColliders(Set<Ball> lastColliders);
+    void setLatestColliders(Set<Ball> latestColliders);
 
     void kick(V2d vel);
 

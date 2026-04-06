@@ -42,8 +42,8 @@ public class Balls {
          *
          */
         if (dist < minD && dist > 1e-6) {
-            a.setLastColliders(Set.of(b));
-            b.setLastColliders(Set.of(a));
+            a.setLatestColliders(Set.of(b));
+            b.setLatestColliders(Set.of(a));
 
             /*
              * Collision case - what to do:
@@ -95,7 +95,7 @@ public class Balls {
         }
     }
 
-    public static void calculateCollision(int indexA, int indexB, List<Ball> balls, CollisionAccumulator[] accumulators) {
+    public static void resolveCollisionWithAccumulators(int indexA, int indexB, List<Ball> balls, CollisionAccumulator[] accumulators) {
         Ball a = balls.get(indexA);
         Ball b = balls.get(indexB);
         double dx = b.getPos().x() - a.getPos().x();

@@ -3,7 +3,7 @@ package pcd.poool.controller.engine;
 import pcd.poool.controller.commands.Command;
 import pcd.poool.controller.commands.CommandQueue;
 import pcd.poool.model.board.Board;
-import pcd.poool.model.core.GameOver;
+import pcd.poool.model.core.GameOverDetails;
 import pcd.poool.view.View;
 
 import java.util.ArrayList;
@@ -11,35 +11,29 @@ import java.util.Date;
 import java.util.List;
 
 public class GameEngine implements Runnable {
+    private static final int SECOND_IN_MILLIS = 1000;
+    public static final int UNLIMITED_SIMULATION_TIME = 0;
     private final CommandQueue commandQueue;
-
     private final Board board;
     private final View view;
-    private volatile boolean running;
-
-    private long totalTimeRunning;
-    private long numberOfFrames;
+    private volatile boolean running = true;
+    private long totalTimeRunningInMillis;
+    private long numberOfFrames = 0;
     private final long maxSimulationTime;
+    private GameOverDetails gameOverDetails;
+    private final List<GameEngineListener> listeners = new ArrayList<>();
 
-    private final List<GameEngineListener> listeners;
-
-    private GameOver gameOverDetails;
-
-    public GameEngine(CommandQueue commandQueue, Board board, View view, long maxSimulationTime) {
+    public GameEngine(CommandQueue commandQueue, Board board, View view, long maxSimulationTimeInSeconds) {
         this.commandQueue = commandQueue;
         this.board = board;
         this.view = view;
-        this.running = true;
-        this.numberOfFrames = 0;
-        this.maxSimulationTime = maxSimulationTime * 1000;
-        this.listeners = new ArrayList<>();
+        this.maxSimulationTime = maxSimulationTimeInSeconds * SECOND_IN_MILLIS;
     }
 
     @Override
     public void run() {
         long startTime = System.currentTimeMillis();
         long lastUpdateTime = System.currentTimeMillis();
-
         while (running) {
             long timeElapsed = System.currentTimeMillis() - lastUpdateTime;
             lastUpdateTime = System.currentTimeMillis();
@@ -47,26 +41,15 @@ public class GameEngine implements Runnable {
             board.updateState(timeElapsed);
             numberOfFrames++;
             int framesPerSecond = 0;
-            totalTimeRunning = System.currentTimeMillis() - startTime;
-            if (totalTimeRunning > 0) {
-                framesPerSecond = (int) (numberOfFrames * 1000 / totalTimeRunning);
+            totalTimeRunningInMillis = System.currentTimeMillis() - startTime;
+            if (totalTimeRunningInMillis > 0) {
+                framesPerSecond = (int) (numberOfFrames * SECOND_IN_MILLIS / totalTimeRunningInMillis);
             }
             view.getViewModel().update(board, framesPerSecond);
             view.render();
             checkEndOfSimulation();
         }
-        notifyListeners();
         log("Simulation is over. Total frames: " + this.numberOfFrames);
-    }
-
-    private void checkEndOfSimulation() {
-        if (board.isGameOver()) {
-            this.gameOverDetails = board.getGameOver();
-            this.running = false;
-        }
-        if (maxSimulationTime != 0 && totalTimeRunning > maxSimulationTime) {
-            this.running = false;
-        }
     }
 
     private void processInputs() {
@@ -75,11 +58,23 @@ public class GameEngine implements Runnable {
         }
     }
 
+    private void checkEndOfSimulation() {
+        if (board.isGameOver()) {
+            this.gameOverDetails = board.getGameOverDetails();
+            this.running = false;
+            notifyListeners();
+        }
+        if (maxSimulationTime != UNLIMITED_SIMULATION_TIME && totalTimeRunningInMillis > maxSimulationTime) {
+            this.running = false;
+            notifyListeners();
+        }
+    }
+
     public void addListener(GameEngineListener listener) {
         this.listeners.add(listener);
     }
 
-    public void notifyListeners() {
+    private void notifyListeners() {
         for (GameEngineListener listener: listeners) {
             if (gameOverDetails != null) {
                 listener.onGameOver(new GameOverEvent(gameOverDetails));

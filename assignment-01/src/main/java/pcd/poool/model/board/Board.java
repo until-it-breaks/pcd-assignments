@@ -5,7 +5,7 @@ import pcd.poool.model.collision.CollisionResolver;
 import pcd.poool.model.common.Boundary;
 import pcd.poool.model.common.Hole;
 import pcd.poool.model.common.P2d;
-import pcd.poool.model.core.GameOver;
+import pcd.poool.model.core.GameOverDetails;
 import pcd.poool.model.core.GameOverReason;
 
 import java.util.ArrayList;
@@ -13,57 +13,42 @@ import java.util.List;
 import java.util.Set;
 
 public class Board {
-
     private List<Ball> balls;
     private List<Hole> holes;
     private Ball playerBall;
     private Ball botBall;
     private Boundary bounds;
-    private int playerScore;
-    private int botScore;
-
-    private GameOver gameOver;
-
+    private int playerScore = 0;
+    private int botScore = 0;
+    private GameOverDetails gameOverDetails;
     private CollisionResolver collisionResolver;
-    private final List<Ball> collisionGroup = new ArrayList<>();
     
     public void init(BoardConf conf, CollisionResolver resolver) {
+    	this.balls = conf.getSmallBalls();
+        this.playerBall = conf.getPlayerBall();
+        this.botBall = conf.getBotBall();
+        this.bounds = conf.getBoardBoundary();
+        this.holes = conf.getHoles();
         this.collisionResolver = resolver;
-    	balls = conf.getSmallBalls();
-    	playerBall = conf.getPlayerBall();
-        botBall = conf.getBotBall();
-    	bounds = conf.getBoardBoundary();
-        holes = conf.getHoles();
-        playerScore = 0;
-        botScore = 0;
-        gameOver = null;
     }
 
     public void updateState(long dt) {
-        updateMainBalls(dt);
-        updateSmallBalls(dt);
-        collisionGroup.clear();
-        if (playerBall != null) collisionGroup.add(playerBall);
-        if (botBall != null) collisionGroup.add(botBall);
-        collisionGroup.addAll(balls);
-        try {
-            collisionResolver.resolve(collisionGroup);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        updateBalls(dt);
+        checkCollisions();
+        checkWinConditions();
+    }
+
+    private void updateBalls(long dt) {
+        if (playerBall != null) {
+            playerBall.updateState(dt, this);
         }
-        checkGameOverConditions();
-    }
-
-    private void updateMainBalls(long dt) {
-        if (playerBall != null) playerBall.updateState(dt, this);
-        if (botBall != null) botBall.updateState(dt, this);
-    }
-
-    private void updateSmallBalls(long dt) {
+        if (botBall != null) {
+            botBall.updateState(dt, this);
+        }
         for (int i = 0; i < balls.size(); i++) {
             Ball ball = balls.get(i);
             ball.updateState(dt, this);
-            if (isInHole(ball)) {
+            if (isBallInHole(ball)) {
                 handleScoring(ball);
                 balls.remove(i);
                 i--;
@@ -72,37 +57,58 @@ public class Board {
     }
 
     private void handleScoring(Ball ball) {
-        Set<Ball> lastColliders = ball.getLastColliders();
-        if (lastColliders.contains(playerBall)) increasePlayerScore();
-        if (lastColliders.contains(botBall)) increaseBotScore();
-    }
-
-    private void checkGameOverConditions() {
-        if (playerBall != null && isInHole(playerBall)) {
-            playerBall = null;
-            setGameOver(GameOverReason.PLAYER_FOUL);
-        } else if (botBall != null && isInHole(botBall)) {
-            botBall = null;
-            setGameOver(GameOverReason.BOT_FOUL);
-        } else if (balls.isEmpty()) {
-            setGameOver(GameOverReason.NO_BALLS_LEFT);
+        Set<Ball> lastColliders = ball.getLatestColliders();
+        if (lastColliders.contains(playerBall)) {
+            playerScore++;
+        }
+        if (lastColliders.contains(botBall)) {
+            botScore++;
         }
     }
 
-    private boolean isInHole(Ball ball) {
+    private boolean isBallInHole(Ball ball) {
+        if (ball == null) {
+            return false;
+        }
         P2d pos = ball.getPos();
-        for (var hole: holes) {
-            if (isInside(pos, hole)) {
+        for (Hole hole: holes) {
+            double dx = pos.x() - hole.pos().x();
+            double dy = pos.y() - hole.pos().y();
+            if (Math.hypot(dx, dy) < hole.radius()) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean isInside(P2d pos, Hole hole) {
-        double dx = pos.x() - hole.pos().x();
-        double dy = pos.y() - hole.pos().y();
-        return Math.hypot(dx, dy) < hole.radius();
+    private void checkCollisions() {
+        List<Ball> collisionGroup = new ArrayList<>();
+        collisionGroup.add(playerBall);
+        collisionGroup.add(botBall);
+        collisionGroup.addAll(balls);
+        try {
+            collisionResolver.resolve(collisionGroup);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void checkWinConditions() {
+        if (isBallInHole(playerBall)) {
+            playerBall = null;
+            setGameOverDetails(GameOverReason.PLAYER_FOUL);
+        }
+        if (isBallInHole(botBall)) {
+            botBall = null;
+            setGameOverDetails(GameOverReason.BOT_FOUL);
+        }
+        if (balls.isEmpty()) {
+            setGameOverDetails(GameOverReason.NO_BALLS_LEFT);
+        }
+    }
+
+    private void setGameOverDetails(GameOverReason reason) {
+        gameOverDetails = new GameOverDetails(reason, playerScore, botScore);
     }
     
     public List<Ball> getBalls(){
@@ -129,27 +135,15 @@ public class Board {
         return playerScore;
     }
 
-    public void increasePlayerScore() {
-        playerScore++;
-    }
-
     public int getBotScore() {
         return botScore;
     }
 
-    public void increaseBotScore() {
-        botScore++;
-    }
-
     public boolean isGameOver() {
-        return gameOver != null;
+        return gameOverDetails != null;
     }
 
-    public GameOver getGameOver() {
-        return gameOver;
-    }
-
-    private void setGameOver(GameOverReason reason) {
-        gameOver = new GameOver(reason, playerScore, botScore);
+    public GameOverDetails getGameOverDetails() {
+        return gameOverDetails;
     }
 }

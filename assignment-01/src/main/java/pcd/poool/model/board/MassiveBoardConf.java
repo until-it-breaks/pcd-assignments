@@ -39,7 +39,7 @@ public class MassiveBoardConf implements BoardConf {
 
 	@Override
 	public Boundary getBoardBoundary() {
-        return new Boundary(-1.5,-1.0,1.5,1.0);
+        return new Boundary(-1.5, -1.0, 1.5, 1.0);
 	}
 
 	@Override

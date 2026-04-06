@@ -34,7 +34,7 @@ public class View implements GameEngineListener {
 	@Override
 	public void onGameOver(GameOverEvent event) {
 		SwingUtilities.invokeLater(() -> {
-			JOptionPane.showMessageDialog(frame, event.data().getMessage());
+			JOptionPane.showMessageDialog(frame, event.gameOverDetails().getMessage());
 			frame.dispose();
 		});
 	}

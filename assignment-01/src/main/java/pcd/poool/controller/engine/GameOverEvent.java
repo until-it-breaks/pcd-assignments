@@ -1,5 +1,5 @@
 package pcd.poool.controller.engine;
 
-import pcd.poool.model.core.GameOver;
+import pcd.poool.model.core.GameOverDetails;
 
-public record GameOverEvent(GameOver data) {}
+public record GameOverEvent(GameOverDetails gameOverDetails) {}
