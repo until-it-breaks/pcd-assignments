@@ -60,7 +60,9 @@ public class ThreadedCollisionResolver implements CollisionResolver {
             }));
             threads.get(i).start();
         }
-        for (Thread t : threads) t.join();
+        for (Thread t : threads) {
+            t.join();
+        }
     }
 
     protected void processRow(int i, List<Ball> balls) {

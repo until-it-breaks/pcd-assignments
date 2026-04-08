@@ -9,7 +9,7 @@ import java.util.List;
  * A single-threaded implementation of {@link CollisionResolver}.
  * <p>
  * This resolver uses a nested loop approach with a complexity of O(n²).
- * It is highly efficient for small collections because it
+ * It is serviceable for small collections because it
  * avoids the overhead of context switching and synchronization.
  */
 public class SerialCollisionResolver implements CollisionResolver {
