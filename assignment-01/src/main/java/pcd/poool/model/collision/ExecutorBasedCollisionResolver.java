@@ -9,9 +9,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ExecutorBasedCollisionResolver implements CollisionResolver, AutoCloseable {
+    private final ExecutorService executor;
 
-    private final int threadCount = Runtime.getRuntime().availableProcessors();
-    private final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+    public ExecutorBasedCollisionResolver() {
+        this(Runtime.getRuntime().availableProcessors());
+    }
+
+    public ExecutorBasedCollisionResolver(int threadCount) {
+        this.executor = Executors.newFixedThreadPool(threadCount);
+    }
 
     @Override
     public void resolve(List<Ball> balls) throws InterruptedException {

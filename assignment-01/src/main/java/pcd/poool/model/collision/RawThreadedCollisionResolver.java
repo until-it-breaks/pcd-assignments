@@ -7,8 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RawThreadedCollisionResolver implements CollisionResolver {
+    private final int threadCount;
 
-    private final int threadCount = Runtime.getRuntime().availableProcessors();
+    public RawThreadedCollisionResolver() {
+        this(Runtime.getRuntime().availableProcessors());
+    }
+
+    public RawThreadedCollisionResolver(int threadCount) {
+        this.threadCount = threadCount;
+    }
 
     public void resolve(List<Ball> balls) throws InterruptedException {
         int n = balls.size();

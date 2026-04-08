@@ -14,15 +14,27 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 public class ExecutorAccumulatorBasedCollisionResolver implements CollisionResolver, AutoCloseable {
+    private final ExecutorService executor;
+    private final int accumulatorCount;
 
-    private static final int ACCUMULATOR_COUNT = Runtime.getRuntime().availableProcessors();
-    private final ExecutorService executor = Executors.newFixedThreadPool(ACCUMULATOR_COUNT);
+    public ExecutorAccumulatorBasedCollisionResolver() {
+        this(Runtime.getRuntime().availableProcessors());
+    }
+
+    public ExecutorAccumulatorBasedCollisionResolver(int threadCount) {
+        this(threadCount, threadCount);
+    }
+
+    public ExecutorAccumulatorBasedCollisionResolver(int threadCount, int accumulatorCount) {
+        this.executor = Executors.newFixedThreadPool(threadCount);
+        this.accumulatorCount = accumulatorCount;
+    }
 
     public void resolve(List<Ball> balls) throws InterruptedException {
         int n = balls.size();
-        BoundedBuffer<CollisionAccumulator[]> accumulatorsPool = new BoundedBufferImpl<>(ACCUMULATOR_COUNT);
+        BoundedBuffer<CollisionAccumulator[]> accumulatorsPool = new BoundedBufferImpl<>(accumulatorCount);
         List<CollisionAccumulator[]> accumulatorMatrix = new ArrayList<>();
-        for (int i = 0; i < ACCUMULATOR_COUNT; i++) {
+        for (int i = 0; i < accumulatorCount; i++) {
             CollisionAccumulator[] row = new CollisionAccumulator[n];
             for (int j = 0; j < n; j++) row[j] = new CollisionAccumulator();
             accumulatorsPool.put(row);
@@ -65,10 +77,10 @@ public class ExecutorAccumulatorBasedCollisionResolver implements CollisionResol
         }
         executor.invokeAll(tasks);
         List<Callable<Void>> reductionTasks = new ArrayList<>();
-        for (int i = 0; i < ACCUMULATOR_COUNT; i++) {
+        for (int i = 0; i < accumulatorCount; i++) {
             final int accumulatorIndex = i;
             reductionTasks.add(() -> {
-                for (int ballIndex = accumulatorIndex; ballIndex < n; ballIndex += ACCUMULATOR_COUNT) {
+                for (int ballIndex = accumulatorIndex; ballIndex < n; ballIndex += accumulatorCount) {
                     reduceBall(ballIndex, balls, accumulatorMatrix);
                 }
                 return null;

@@ -11,10 +11,19 @@ import java.util.List;
 import java.util.Set;
 
 public class RawThreadedAccumulatorBasedCollisionResolver implements CollisionResolver {
+    private final int threadCount;
+
+    public RawThreadedAccumulatorBasedCollisionResolver() {
+        this(Runtime.getRuntime().availableProcessors());
+    }
+
+    public RawThreadedAccumulatorBasedCollisionResolver(int threadCount) {
+        this.threadCount = threadCount;
+    }
+
     @Override
     public void resolve(List<Ball> balls) throws InterruptedException {
         int n = balls.size();
-        int threadCount = Runtime.getRuntime().availableProcessors();
 
         CollisionAccumulator[][] accumulatorMatrix = new CollisionAccumulator[threadCount][n];
         for (int i = 0; i < threadCount; i++) {
