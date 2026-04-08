@@ -10,10 +10,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * A high-performance {@link CollisionResolver} utilizing a fixed thread pool.
+ * A multithreaded {@link CollisionResolver} utilizing a fixed thread pool.
  * <p>
- * This implementation improves upon raw threading by reusing a persistent
- * {@link ExecutorService}, significantly reducing the overhead of thread creation.
+ * This class is an {@link ExecutorService}-based variant of the {@link ThreadedCollisionResolver}.
+ * While the previous version used a stride to interleave row assignments, this implementation
+ * <b>batches</b> each row with its mirror (row {@code i} and {@code n - 1 - i})
+ * into a single task.
+ * </p>
+ * <p>
+ * This strategy folds the O(n²) triangular workload into N/2 balanced tasks,
+ * which are then distributed across a persistent thread pool to eliminate the overhead
+ * of thread creation and destruction.
  * </p>
  */
 public class PooledCollisionResolver implements CollisionResolver, AutoCloseable {
@@ -36,13 +43,14 @@ public class PooledCollisionResolver implements CollisionResolver, AutoCloseable
             final int row = i;
             executor.execute(() -> {
                 try {
-                    processRow(row, balls);                     // Heavy
-                    processRow(ballCount - 1 - row, balls);     // Light
+                    processRow(row, balls);                     // Frontmost available row
+                    processRow(ballCount - 1 - row, balls);     // Backmost available row
                 } finally {
                     latch.countDown();
                 }
             });
         }
+        // Handle middle row for odd counts. This task is treated as a row without its mirror.
         if (ballCount % 2 != 0) {
             executor.execute(() -> {
                 try {

@@ -9,15 +9,27 @@ import java.util.List;
 /**
  * A multithreaded {@link CollisionResolver} that manages raw {@link Thread} lifecycles manually.
  * <p>
- * This resolver uses a "Heavy/Light" row distribution strategy to balance the
- * O(n²) workload across a fixed number of threads. It relies on
- * {@code Balls.resolveCollisionSynchronized} to ensure thread safety during
- * concurrent access to ball states.
+ * This resolver uses a mirrored strided distribution strategy to balance
+ * the O(n²) workload across a fixed number of threads.
+ * By using a stride to interleave
+ * row assignments and pairing each row with its mirror ({@code j} and {@code n-1-j}),
+ * it folds the triangular workload in an attempt to equalize the computational
+ * effort across all threads.
  * </p>
  * <p>
- * <b>Note:</b> Because this implementation creates and joins new threads on every
- * call to {@code resolve}, it may incur significant performance penalties in
- * high-frequency simulation loops.
+ * <b>Workload Distribution Example (5 balls, 2 threads):</b>
+ * <pre>
+ * Ball pairs to check:
+ * Row 0: (0,1) (0,2) (0,3) (0,4) [4 checks]
+ * Row 1:       (1,2) (1,3) (1,4) [3 checks]
+ * Row 2:             (2,3) (2,4) [2 checks]
+ * Row 3:                   (3,4) [1 check ]
+ * Row 4:                         [0 checks]
+ *
+ * Distribution:
+ * Thread 0: Row 0 + Row 4 + Row 2 = 6 checks
+ * Thread 1: Row 1 + Row 3 = 4 checks
+ * </pre>
  * </p>
  */
 public class ThreadedCollisionResolver implements CollisionResolver {
@@ -38,10 +50,10 @@ public class ThreadedCollisionResolver implements CollisionResolver {
             final int threadIndex = i;
             threads.add(new Thread(() -> {
                 for (int j = threadIndex; j < n / 2; j += threadCount) {
-                    processRow(j, balls);           // Heavy row
-                    processRow(n - 1 - j, balls);   // Light row
+                    processRow(j, balls);           // Frontmost available row
+                    processRow(n - 1 - j, balls);   // Backmost available row
                 }
-                // Handle middle row for odd counts
+                // Handle middle row for odd counts. It gets assigned to the first thread.
                 if (n % 2 != 0 && threadIndex == 0) {
                     processRow(n / 2, balls);
                 }
