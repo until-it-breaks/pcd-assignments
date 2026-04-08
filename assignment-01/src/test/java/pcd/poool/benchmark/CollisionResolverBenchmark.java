@@ -11,7 +11,7 @@ import pcd.poool.model.board.BoardConf;
 import pcd.poool.model.board.HolelessBoard;
 import pcd.poool.model.board.MassiveBoardConf;
 import pcd.poool.model.collision.CollisionResolver;
-import pcd.poool.model.collision.ExecutorAccumulatorBasedCollisionResolver;
+import pcd.poool.model.collision.PooledLockFreeCollisionResolver;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
 
@@ -23,13 +23,14 @@ public class CollisionResolverBenchmark {
         Board board = new Board();
         /*
          * Available collision resolvers:
-         * - SequentialCollisionResolver
-         * - RawThreadedCollisionResolver
-         * - RawThreadedAccumulatorBasedCollisionResolver
-         * - ExecutorBasedCollisionResolver
-         * - ExecutorAccumulatorBasedCollisionResolver
+         * - SerialCollisionResolver
+         * - ThreadedCollisionResolver
+         * - UnsafeThreadedCollisionResolver
+         * - PooledCollisionResolver
+         * - ThreadedLockFreeCollisionResolver
+         * - PooledLockFreeCollisionResolver
          */
-        CollisionResolver resolver = new ExecutorAccumulatorBasedCollisionResolver();
+        CollisionResolver resolver = new PooledLockFreeCollisionResolver();
         BoardConf config = new HolelessBoard(new MassiveBoardConf());
         board.init(config, resolver);
 

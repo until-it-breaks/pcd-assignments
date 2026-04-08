@@ -1,0 +1,23 @@
+package pcd.poool.jpf;
+
+import pcd.poool.model.ball.Ball;
+import pcd.poool.model.ball.BallImplementation;
+import pcd.poool.model.collision.CollisionResolver;
+import pcd.poool.model.collision.UnsafeThreadedCollisionResolver;
+import pcd.poool.model.common.P2d;
+import pcd.poool.model.common.V2d;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class TestUnsafeThreadedCollisionResolver {
+    public static void main(String[] args) throws InterruptedException {
+        int numBalls = 4;
+        List<Ball> balls = new ArrayList<>();
+        for (int i = 0; i < numBalls; i++) {
+            balls.add(new BallImplementation(new P2d(i * 0.1, 0), 0.15, 1.0, new V2d(0, 0)));
+        }
+        CollisionResolver resolver = new UnsafeThreadedCollisionResolver(2);
+        resolver.resolve(balls);
+    }
+}

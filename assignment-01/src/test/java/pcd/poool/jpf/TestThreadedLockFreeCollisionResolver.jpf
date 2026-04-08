@@ -1,0 +1,7 @@
+target=pcd.poool.jpf.TestThreadedLockFreeCollisionResolver
+
+classpath=assignment-01/target/classes
+
+listener=gov.nasa.jpf.listener.PreciseRaceDetector
+
+report.console.property_violation=error,trace
