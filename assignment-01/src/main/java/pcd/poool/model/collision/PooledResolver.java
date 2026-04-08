@@ -8,14 +8,21 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ExecutorBasedCollisionResolver implements CollisionResolver, AutoCloseable {
+/**
+ * A high-performance {@link CollisionResolver} utilizing a fixed thread pool.
+ * <p>
+ * This implementation improves upon raw threading by reusing a persistent
+ * {@link ExecutorService}, significantly reducing the overhead of thread creation.
+ * </p>
+ */
+public class PooledResolver implements CollisionResolver, AutoCloseable {
     private final ExecutorService executor;
 
-    public ExecutorBasedCollisionResolver() {
+    public PooledResolver() {
         this(Runtime.getRuntime().availableProcessors());
     }
 
-    public ExecutorBasedCollisionResolver(int threadCount) {
+    public PooledResolver(int threadCount) {
         this.executor = Executors.newFixedThreadPool(threadCount);
     }
 

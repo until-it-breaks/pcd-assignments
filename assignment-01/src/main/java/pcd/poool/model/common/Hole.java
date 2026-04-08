@@ -1,8 +1,8 @@
 package pcd.poool.model.common;
 
 public class Hole {
-    private P2d pos;
-    private double radius;
+    private final P2d pos;
+    private final double radius;
 
     public Hole(P2d pos, double radius) {
         this.pos = pos;

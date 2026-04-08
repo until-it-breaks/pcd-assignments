@@ -6,14 +6,28 @@ import pcd.poool.model.ball.Balls;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RawThreadedCollisionResolver implements CollisionResolver {
+/**
+ * A multithreaded {@link CollisionResolver} that manages raw {@link Thread} lifecycles manually.
+ * <p>
+ * This resolver uses a "Heavy/Light" row distribution strategy to balance the
+ * O(n²) workload across a fixed number of threads. It relies on
+ * {@code Balls.resolveCollisionSynchronized} to ensure thread safety during
+ * concurrent access to ball states.
+ * </p>
+ * <p>
+ * <b>Note:</b> Because this implementation creates and joins new threads on every
+ * call to {@code resolve}, it may incur significant performance penalties in
+ * high-frequency simulation loops.
+ * </p>
+ */
+public class ThreadedCollisionResolver implements CollisionResolver {
     private final int threadCount;
 
-    public RawThreadedCollisionResolver() {
+    public ThreadedCollisionResolver() {
         this(Runtime.getRuntime().availableProcessors());
     }
 
-    public RawThreadedCollisionResolver(int threadCount) {
+    public ThreadedCollisionResolver(int threadCount) {
         this.threadCount = threadCount;
     }
 

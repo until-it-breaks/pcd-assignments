@@ -20,14 +20,10 @@ public class CommandQueue {
 
 	public List<Command> fetchAllCommands() {
 		List<Command> commands = new ArrayList<>();
-		try {
-			Command command;
-			while ((command = buffer.poll()) != null) {
-				commands.add(command);
-			}
-			return commands;
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        Command command;
+        while ((command = buffer.poll()) != null) {
+            commands.add(command);
+        }
+        return commands;
+    }
 }

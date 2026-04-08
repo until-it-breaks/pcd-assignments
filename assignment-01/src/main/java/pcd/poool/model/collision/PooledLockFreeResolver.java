@@ -13,19 +13,37 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 
-public class ExecutorAccumulatorBasedCollisionResolver implements CollisionResolver, AutoCloseable {
+/**
+ * A thread-pooled variant of {@link ThreadedLockFreeResolver}.
+ * <p>
+ * This implementation improves the MapReduce pattern by utilizing an {@link ExecutorService}
+ * to manage thread lifecycles.
+ * <p>
+ * The process is split into two phases:
+ * <ol>
+ * <li><b>Map Phase:</b> Tasks compute collision effects into reusable accumulators.</li>
+ * <li><b>Reduce Phase:</b> Results from all accumulators are merged and applied to the balls.</li>
+ * </ol>
+ * </p>
+ * It is highly recommended to set the {@code accumulatorCount} to a value roughly
+ * equal to the {@code threadCount}. Providing significantly more accumulators than
+ * active threads does not increase parallelism but can lead to severe memory pressure
+ * due to the large {@code O(n)} matrices maintained in the pool.
+ * </p>
+ */
+public class PooledLockFreeResolver implements CollisionResolver, AutoCloseable {
     private final ExecutorService executor;
     private final int accumulatorCount;
 
-    public ExecutorAccumulatorBasedCollisionResolver() {
+    public PooledLockFreeResolver() {
         this(Runtime.getRuntime().availableProcessors());
     }
 
-    public ExecutorAccumulatorBasedCollisionResolver(int threadCount) {
+    public PooledLockFreeResolver(int threadCount) {
         this(threadCount, threadCount);
     }
 
-    public ExecutorAccumulatorBasedCollisionResolver(int threadCount, int accumulatorCount) {
+    public PooledLockFreeResolver(int threadCount, int accumulatorCount) {
         this.executor = Executors.newFixedThreadPool(threadCount);
         this.accumulatorCount = accumulatorCount;
     }

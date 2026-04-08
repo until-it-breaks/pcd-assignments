@@ -1,8 +1,8 @@
 package pcd.poool.model.common;
 
 public class P2d {
-    private double x;
-    private double y;
+    private final double x;
+    private final double y;
 
     public P2d(double x, double y) {
         this.x = x;

@@ -10,14 +10,28 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class RawThreadedAccumulatorBasedCollisionResolver implements CollisionResolver {
+/**
+ * A lock-free {@link CollisionResolver} using a MapReduce concurrency pattern.
+ * <p>
+ * This implementation eliminates lock contention by providing each thread with its
+ * own {@link CollisionAccumulator} matrix. The process is split into two phases:
+ * <ol>
+ * <li><b>Map Phase:</b> Threads compute collision effects into isolated accumulators.</li>
+ * <li><b>Reduce Phase:</b> Results from all accumulators are merged and applied to the balls.</li>
+ * </ol>
+ * </p>
+ * <p>
+ * Requires {@code O(threadCount * ballCount)} space.
+ * </p>
+ */
+public class ThreadedLockFreeResolver implements CollisionResolver {
     private final int threadCount;
 
-    public RawThreadedAccumulatorBasedCollisionResolver() {
+    public ThreadedLockFreeResolver() {
         this(Runtime.getRuntime().availableProcessors());
     }
 
-    public RawThreadedAccumulatorBasedCollisionResolver(int threadCount) {
+    public ThreadedLockFreeResolver(int threadCount) {
         this.threadCount = threadCount;
     }
 

@@ -5,7 +5,14 @@ import pcd.poool.model.ball.Balls;
 
 import java.util.List;
 
-public class SequentialCollisionResolver implements CollisionResolver {
+/**
+ * A single-threaded implementation of {@link CollisionResolver}.
+ * <p>
+ * This resolver uses a nested loop approach with a complexity of O(n²).
+ * It is highly efficient for small collections because it
+ * avoids the overhead of context switching and synchronization.
+ */
+public class SerialCollisionResolver implements CollisionResolver {
 
     @Override
     public void resolve(List<Ball> balls) {

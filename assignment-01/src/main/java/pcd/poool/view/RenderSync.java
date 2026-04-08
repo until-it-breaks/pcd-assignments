@@ -1,7 +1,6 @@
 package pcd.poool.view;
 
 public class RenderSync {
-
 	private long nextFrameToRender;
 	private long lastFrameRendered;
 	

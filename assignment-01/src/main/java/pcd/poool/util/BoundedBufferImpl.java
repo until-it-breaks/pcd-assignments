@@ -7,7 +7,6 @@ import java.util.LinkedList;
  * as a monitor, using raw mechanisms
  */
 public class BoundedBufferImpl<Item> implements BoundedBuffer<Item> {
-
 	private final LinkedList<Item> buffer;
 	private final int maxSize;
 

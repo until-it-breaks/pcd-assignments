@@ -7,14 +7,43 @@ import pcd.poool.model.common.V2d;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Utility class providing static methods for calculating and resolving physical collisions
+ * between {@link Ball} instances.
+ * <p>
+ * This class includes various implementations of collision logic tailored for
+ * sequential, synchronized, or accumulator-based concurrency models.
+ * </p>
+ */
 public class Balls {
 
     private static final double RESTITUTION_FACTOR = 0.5;
 
+    /**
+     * Resolves a collision between two balls without any internal synchronization.
+     * <p>
+     * This method is NOT thread-safe. It directly modifies the state
+     * of the provided balls. Use this only in single-threaded contexts or when
+     * external synchronization is guaranteed.
+     * </p>
+     * @param a The first ball.
+     * @param b The second ball.
+     */
     public static void resolveCollisionUnsafe(Ball a, Ball b) {
         resolveCollision(a, b);
     }
 
+    /**
+     * Resolves a collision between two balls using internal synchronization to ensure thread safety.
+     * <p>
+     * This method employs a <b>Resource Ordering</b> strategy to prevent deadlocks.
+     * It compares the unique IDs of the balls to consistently determine the lock
+     * acquisition order, allowing multiple threads to safely resolve different
+     * pairs involving the same balls simultaneously.
+     * </p>
+     * @param a The first ball.
+     * @param b The second ball.
+     */
     public static void resolveCollisionSynchronized(Ball a, Ball b) {
         Ball first = (a.getId() < b.getId()) ? a : b;
         Ball second = (a.getId() < b.getId()) ? b : a;
@@ -95,6 +124,20 @@ public class Balls {
         }
     }
 
+    /**
+     * Performs collision detection and stores the resulting physical deltas into
+     * provided accumulators instead of modifying the balls directly.
+     * <p>
+     * This method is designed for a MapReduce-style concurrency model. It calculates
+     * displacement and velocity changes and adds them to the {@link CollisionAccumulator}
+     * at the corresponding indices. This allows for lock-free parallel computation
+     * where state updates are deferred to a final reduction phase.
+     * </p>
+     * @param indexA       The index of the first ball in the balls list.
+     * @param indexB       The index of the second ball in the balls list.
+     * @param balls        The list containing the ball entities.
+     * @param accumulators An array of accumulators where the results will be stored.
+     */
     public static void resolveCollisionWithAccumulators(int indexA, int indexB, List<Ball> balls, CollisionAccumulator[] accumulators) {
         Ball a = balls.get(indexA);
         Ball b = balls.get(indexB);

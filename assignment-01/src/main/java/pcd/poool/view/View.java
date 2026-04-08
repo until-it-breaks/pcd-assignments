@@ -8,7 +8,6 @@ import pcd.poool.controller.commands.CommandQueue;
 import javax.swing.*;
 
 public class View implements GameEngineListener {
-
 	private final ViewFrame frame;
 	private final ViewModel viewModel;
 	
