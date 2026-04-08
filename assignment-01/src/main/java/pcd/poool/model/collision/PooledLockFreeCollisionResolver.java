@@ -31,19 +31,19 @@ import java.util.concurrent.*;
  * due to the large {@code O(n)} matrices maintained in the pool.
  * </p>
  */
-public class PooledLockFreeResolver implements CollisionResolver, AutoCloseable {
+public class PooledLockFreeCollisionResolver implements CollisionResolver, AutoCloseable {
     private final ExecutorService executor;
     private final int accumulatorCount;
 
-    public PooledLockFreeResolver() {
+    public PooledLockFreeCollisionResolver() {
         this(Runtime.getRuntime().availableProcessors());
     }
 
-    public PooledLockFreeResolver(int threadCount) {
+    public PooledLockFreeCollisionResolver(int threadCount) {
         this(threadCount, threadCount);
     }
 
-    public PooledLockFreeResolver(int threadCount, int accumulatorCount) {
+    public PooledLockFreeCollisionResolver(int threadCount, int accumulatorCount) {
         this.executor = Executors.newFixedThreadPool(threadCount);
         this.accumulatorCount = accumulatorCount;
     }

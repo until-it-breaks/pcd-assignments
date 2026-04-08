@@ -15,14 +15,14 @@ import java.util.concurrent.Executors;
  * {@link ExecutorService}, significantly reducing the overhead of thread creation.
  * </p>
  */
-public class PooledResolver implements CollisionResolver, AutoCloseable {
+public class PooledCollisionResolver implements CollisionResolver, AutoCloseable {
     private final ExecutorService executor;
 
-    public PooledResolver() {
+    public PooledCollisionResolver() {
         this(Runtime.getRuntime().availableProcessors());
     }
 
-    public PooledResolver(int threadCount) {
+    public PooledCollisionResolver(int threadCount) {
         this.executor = Executors.newFixedThreadPool(threadCount);
     }
 
