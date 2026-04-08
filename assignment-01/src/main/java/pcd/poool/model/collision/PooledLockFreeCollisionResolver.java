@@ -17,19 +17,25 @@ import java.util.concurrent.*;
  * A thread-pooled variant of {@link ThreadedLockFreeCollisionResolver}.
  * <p>
  * This implementation improves the MapReduce pattern by utilizing an {@link ExecutorService}
- * to manage thread lifecycles.
- * <p>
- * The process is split into two phases:
- * <ol>
- * <li><b>Map Phase:</b> Tasks compute collision effects into reusable accumulators.</li>
- * <li><b>Reduce Phase:</b> Results from all accumulators are merged and applied to the balls.</li>
- * </ol>
+ * for task management.
  * </p>
- * It is highly recommended to set the {@code accumulatorCount} to a value roughly
- * equal to the {@code threadCount}. Providing significantly more accumulators than
- * active threads does not increase parallelism but can lead to severe memory pressure
- * due to the large {@code O(n)} matrices maintained in the pool.
+ * Transitioning to a task-based model presented a significant
+ * memory challenge. In the raw threaded version, each thread owned exactly one row-buffer.
+ * Since the number of tasks in the pooled version ({@code n/2}) is much
+ * larger than the thread count, allocating a unique buffer per task would lead to
+ * unsustainable memory pressure.
  * </p>
+ * <p>In this implementation:
+ * <ul>
+ * <li>The resolver maintains a fixed-size pool of {@code accumulatorCount} rows.</li>
+ * <li>Map Phase:< Tasks utilize a "lease-and-release" mechanism via a
+ * {@link BoundedBuffer}. Each task borrows a row, populates it using the
+ * mirrored row distribution strategy, and returns it to the pool
+ * for reuse by other tasks.</li>
+ * <li>Reduce Phase: Aggregates results using strided column-wise merging,
+ * ensuring each ball is processed by exactly one task.</li>
+ * </ul>
+ * <p/>
  */
 public class PooledLockFreeCollisionResolver implements CollisionResolver, AutoCloseable {
     private final ExecutorService executor;
@@ -50,28 +56,32 @@ public class PooledLockFreeCollisionResolver implements CollisionResolver, AutoC
 
     public void resolve(List<Ball> balls) throws InterruptedException {
         int n = balls.size();
-        BoundedBuffer<CollisionAccumulator[]> accumulatorsPool = new BoundedBufferImpl<>(accumulatorCount);
-        List<CollisionAccumulator[]> accumulatorMatrix = new ArrayList<>();
+        BoundedBuffer<CollisionAccumulator[]> accumulatorPool = new BoundedBufferImpl<>(accumulatorCount);
+        List<CollisionAccumulator[]> accumulatorTable = new ArrayList<>();
         for (int i = 0; i < accumulatorCount; i++) {
-            CollisionAccumulator[] row = new CollisionAccumulator[n];
-            for (int j = 0; j < n; j++) row[j] = new CollisionAccumulator();
-            accumulatorsPool.put(row);
-            accumulatorMatrix.add(row);
+            CollisionAccumulator[] accumulatorRow = new CollisionAccumulator[n];
+            for (int j = 0; j < n; j++) {
+                accumulatorRow[j] = new CollisionAccumulator();
+            }
+            accumulatorPool.put(accumulatorRow);
+            accumulatorTable.add(accumulatorRow);
         }
+
+        // Map Phase
         List<Callable<Void>> tasks = new ArrayList<>();
         for (int i = 0; i < n / 2; i++) {
-            final int rowIndex = i;
+            final int ballIndex = i;
             tasks.add(() -> {
                 CollisionAccumulator[] accumulatorRow = null;
                 try {
-                    accumulatorRow = accumulatorsPool.get();
-                    processRow(rowIndex, balls, accumulatorRow);
-                    processRow(n - 1 - rowIndex, balls, accumulatorRow);
+                    accumulatorRow = accumulatorPool.get();
+                    processRow(ballIndex, balls, accumulatorRow);
+                    processRow(n - 1 - ballIndex, balls, accumulatorRow);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 } finally {
                     if (accumulatorRow != null) {
-                        accumulatorsPool.put(accumulatorRow);
+                        accumulatorPool.put(accumulatorRow);
                     }
                 }
                 return null;
@@ -81,25 +91,27 @@ public class PooledLockFreeCollisionResolver implements CollisionResolver, AutoC
             tasks.add(() -> {
                 CollisionAccumulator[] accumulatorRow = null;
                 try {
-                    accumulatorRow = accumulatorsPool.get();
+                    accumulatorRow = accumulatorPool.get();
                     processRow(n / 2, balls, accumulatorRow);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 } finally {
                     if (accumulatorRow != null) {
-                        accumulatorsPool.put(accumulatorRow);
+                        accumulatorPool.put(accumulatorRow);
                     }
                 }
                 return null;
             });
         }
         executor.invokeAll(tasks);
+
+        // Reduction Phase
         List<Callable<Void>> reductionTasks = new ArrayList<>();
         for (int i = 0; i < accumulatorCount; i++) {
             final int accumulatorIndex = i;
             reductionTasks.add(() -> {
                 for (int ballIndex = accumulatorIndex; ballIndex < n; ballIndex += accumulatorCount) {
-                    reduceBall(ballIndex, balls, accumulatorMatrix);
+                    reduceBall(ballIndex, balls, accumulatorTable);
                 }
                 return null;
             });
@@ -113,11 +125,11 @@ public class PooledLockFreeCollisionResolver implements CollisionResolver, AutoC
         }
     }
 
-    private void reduceBall(int ballIndex, List<Ball> balls, List<CollisionAccumulator[]> accumulatorMatrix) {
+    private void reduceBall(int ballIndex, List<Ball> balls, List<CollisionAccumulator[]> accumulatorTable) {
         double dx = 0, dy = 0, dvx = 0, dvy = 0;
         Set<Ball> colliders = new HashSet<>();
-        for (CollisionAccumulator[] row : accumulatorMatrix) {
-            CollisionAccumulator accumulator = row[ballIndex];
+        for (CollisionAccumulator[] accumulatorRow : accumulatorTable) {
+            CollisionAccumulator accumulator = accumulatorRow[ballIndex];
             dx += accumulator.getDeltaX();
             dy += accumulator.getDeltaY();
             dvx += accumulator.getDeltaVX();
