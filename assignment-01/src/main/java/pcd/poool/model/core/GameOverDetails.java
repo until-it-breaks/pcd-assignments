@@ -1,11 +1,38 @@
 package pcd.poool.model.core;
 
-public record GameOverDetails(GameOverReason reason, int playerScore, int botScore) {
+public class GameOverDetails {
+    private final GameOverReason reason;
+    private final int playerScore;
+    private final int botScore;
+
+    public GameOverDetails(GameOverReason reason, int playerScore, int botScore) {
+        this.reason = reason;
+        this.playerScore = playerScore;
+        this.botScore = botScore;
+    }
+
+    public GameOverReason getReason() {
+        return reason;
+    }
+
+    public int getPlayerScore() {
+        return playerScore;
+    }
+
+    public int getBotScore() {
+        return botScore;
+    }
+
     public String getMessage() {
-        return switch (reason) {
-            case NO_BALLS_LEFT -> String.format("Game over! Final score: %d - %d", playerScore, botScore);
-            case PLAYER_FOUL -> "Bot wins! Player committed a foul.";
-            case BOT_FOUL -> "Player wins! Bot committed a foul.";
-        };
+        switch (reason) {
+            case NO_BALLS_LEFT:
+                return String.format("Game over! Final score: %d - %d", playerScore, botScore);
+            case PLAYER_FOUL:
+                return "Bot wins! Player committed a foul.";
+            case BOT_FOUL:
+                return "Player wins! Bot committed a foul.";
+            default:
+                throw new IllegalStateException("Unexpected value: " + reason);
+        }
     }
 }

@@ -47,13 +47,14 @@ public class Poool {
 			}
 
 			private void shutdown() {
-				if (resolver instanceof AutoCloseable closeable) {
-                    try {
-                        closeable.close();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+				if (resolver instanceof AutoCloseable) {
+					AutoCloseable closeable = (AutoCloseable) resolver;
+					try {
+						closeable.close();
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}
 			}
 		});
 

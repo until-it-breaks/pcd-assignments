@@ -1,6 +1,13 @@
 package pcd.poool.model.common;
 
-public record P2d(double x, double y)  {
+public class P2d {
+    private double x;
+    private double y;
+
+    public P2d(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
 
     public P2d sum(V2d v){
         return new P2d(x + v.x(), y + v.y());

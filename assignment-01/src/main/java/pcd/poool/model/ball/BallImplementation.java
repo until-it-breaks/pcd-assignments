@@ -117,7 +117,8 @@ public class BallImplementation implements Ball {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof BallImplementation that)) return false;
+        if (!(o instanceof BallImplementation)) return false;
+        BallImplementation that = (BallImplementation) o;
         return id == that.id;
     }
 
