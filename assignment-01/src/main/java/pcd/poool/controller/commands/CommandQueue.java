@@ -18,6 +18,20 @@ public class CommandQueue {
 		}
 	}
 
+	/**
+	 * Drains all currently available commands from the queue.
+	 * <p>
+	 * This method returns immediately and does not wait for new commands to arrive.
+	 * It performs a thread-safe "drain" of the buffer, retrieving all commands
+	 * currently residing in it at the moment of the call.
+	 * </p>
+	 * <p>
+	 * While this method does not sleep, it is synchronized via the
+	 * underlying buffer. If another thread is currently adding a command, this
+	 * thread will briefly block until the lock is released.
+	 * </p>
+	 * @return A list of all pending {@link Command} objects.
+	 */
 	public List<Command> fetchAllCommands() {
 		List<Command> commands = new ArrayList<>();
         Command command;
