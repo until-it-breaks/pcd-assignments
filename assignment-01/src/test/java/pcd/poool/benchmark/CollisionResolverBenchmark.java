@@ -1,4 +1,4 @@
-package pcd.poool;
+package pcd.poool.benchmark;
 
 import pcd.poool.controller.ai.Bot;
 import pcd.poool.controller.commands.CommandQueue;
@@ -15,9 +15,9 @@ import pcd.poool.model.collision.ExecutorAccumulatorBasedCollisionResolver;
 import pcd.poool.view.View;
 import pcd.poool.view.ViewModel;
 
-public class BenchmarkMain {
+public class CollisionResolverBenchmark {
 
-    public static final int MAX_SIMULATION_TIME = 60;
+    public static final int BENCHMARK_DURATION_IN_SECONDS = 60;
 
     public static void main(String[] args) {
         Board board = new Board();
@@ -40,7 +40,7 @@ public class BenchmarkMain {
         Thread botThread = new Thread(bot);
         botThread.setName("BotThread");
 
-        GameEngine gameEngine = new GameEngine(commandQueue, board, view, MAX_SIMULATION_TIME);
+        GameEngine gameEngine = new GameEngine(commandQueue, board, view, BENCHMARK_DURATION_IN_SECONDS);
         gameEngine.addListener(bot);
         gameEngine.addListener(view);
         gameEngine.addListener(new GameEngineListener() {
@@ -69,7 +69,7 @@ public class BenchmarkMain {
         Thread gameEngineThread = new Thread(gameEngine);
         gameEngineThread.setName("GameEngineThread");
 
-        System.out.println("Starting benchmark with: " + resolver.getClass().getSimpleName() + " for " + MAX_SIMULATION_TIME + " seconds");
+        System.out.println("Starting benchmark with: " + resolver.getClass().getSimpleName() + " for " + BENCHMARK_DURATION_IN_SECONDS + " seconds");
 
         gameEngineThread.start();
         botThread.start();
