@@ -24,14 +24,14 @@ import java.util.Set;
  * Requires {@code O(threadCount * ballCount)} space.
  * </p>
  */
-public class ThreadedLockFreeResolver implements CollisionResolver {
+public class ThreadedLockFreeCollisionResolver implements CollisionResolver {
     private final int threadCount;
 
-    public ThreadedLockFreeResolver() {
+    public ThreadedLockFreeCollisionResolver() {
         this(Runtime.getRuntime().availableProcessors());
     }
 
-    public ThreadedLockFreeResolver(int threadCount) {
+    public ThreadedLockFreeCollisionResolver(int threadCount) {
         this.threadCount = threadCount;
     }
 

@@ -51,7 +51,7 @@ public class ThreadedCollisionResolver implements CollisionResolver {
         for (Thread t : threads) t.join();
     }
 
-    private void processRow(int i, List<Ball> balls) {
+    protected void processRow(int i, List<Ball> balls) {
         Ball ball = balls.get(i);
         for (int j = i + 1; j < balls.size(); j++) {
             Balls.resolveCollisionSynchronized(ball, balls.get(j));

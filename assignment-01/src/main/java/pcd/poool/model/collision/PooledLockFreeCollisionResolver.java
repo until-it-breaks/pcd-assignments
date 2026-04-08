@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 /**
- * A thread-pooled variant of {@link ThreadedLockFreeResolver}.
+ * A thread-pooled variant of {@link ThreadedLockFreeCollisionResolver}.
  * <p>
  * This implementation improves the MapReduce pattern by utilizing an {@link ExecutorService}
  * to manage thread lifecycles.
