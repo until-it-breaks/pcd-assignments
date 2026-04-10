@@ -5,36 +5,38 @@ import pcd.poool.model.ball.Balls;
 import pcd.poool.model.common.P2d;
 import pcd.poool.model.common.V2d;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
- * A lock-free {@link CollisionResolver} using a MapReduce concurrency pattern.
+ * A thread based {@link CollisionResolver} using a MapReduce-style parallel collision pipeline.
+ *
  * <p>
- * This implementation achieves thread-safety without locks by providing each thread with
- * an isolated {@link CollisionAccumulator} row, thus eliminating contention
- * during the computation phase.
+ * This implementation achieves thread-safe parallelism without locks by ensuring that each
+ * worker thread operates on an isolated {@link CollisionAccumulator} map during the
+ * computation phase. No shared mutation occurs during the map phase.
  * </p>
- * <p><b>Algorithm Phases:</b></p>
+ *
  * <ol>
  * <li>
- * <b>Map Phase:</b> Uses a mirrored strided distribution to balance the O(n²) workload.
- * Instead of applying changes directly to shared ball states, each thread
- * accumulates spatial and velocity deltas as well as the possible colliders into its own private row
- * within the accumulator table.
+ * Map Phase:
+ * The O(n²) collision space is partitioned using a mirrored strided distribution.
+ * Each thread processes a subset of collision pairs and accumulates position and velocity
+ * deltas, along with collider information, into its own private accumulator map.
  * </li>
+ *
  * <li>
- * <b>Reduce Phase:</b> Merges the results in a strided column-wise fashion.
- * Each reduction thread is responsible for a specific subset of balls, aggregating
- * the deltas from all corresponding rows in the accumulator table to compute the
- * final state of each ball.
+ * Reduce Phase:
+ * After all map tasks complete, results are merged sequentially.
+ * For each ball, accumulated deltas from all thread-local maps are summed to compute
+ * the final updated position, velocity, and collider set.
  * </li>
  * </ol>
+ *
  * <p>
- * This approach trades memory O(threadCount * ballCount) for CPU throughput.
+ * This design trades additional memory usage (O(threadCount × numberOfBalls)) for
+ * improved CPU throughput and eliminates synchronization overhead in the map phase.
  * </p>
+ *
  */
 public class ThreadedLockFreeCollisionResolver implements CollisionResolver {
     private final int threadCount;
@@ -50,11 +52,10 @@ public class ThreadedLockFreeCollisionResolver implements CollisionResolver {
     @Override
     public void resolve(List<Ball> balls) throws InterruptedException {
         int n = balls.size();
-        CollisionAccumulator[][] accumulatorTable = new CollisionAccumulator[threadCount][n];
+
+        List<Map<Ball, CollisionAccumulator>> accumulatorMaps = new ArrayList<>();
         for (int i = 0; i < threadCount; i++) {
-            for (int j = 0; j < n; j++) {
-                accumulatorTable[i][j] = new CollisionAccumulator();
-            }
+            accumulatorMaps.add(new HashMap<>());
         }
 
         // Map Phase
@@ -62,13 +63,13 @@ public class ThreadedLockFreeCollisionResolver implements CollisionResolver {
         for (int i = 0; i < threadCount; i++) {
             final int threadIndex = i;
             threads.add(new Thread(() -> {
-                CollisionAccumulator[] accumulatorRow = accumulatorTable[threadIndex];
+                var accumulatorMap = accumulatorMaps.get(threadIndex);
                 for (int j = threadIndex; j < n / 2; j += threadCount) {
-                    processRow(j, balls, accumulatorRow);
-                    processRow(n - 1 - j, balls, accumulatorRow);
+                    processRow(j, balls, accumulatorMap);
+                    processRow(n - 1 - j, balls, accumulatorMap);
                 }
                 if (n % 2 != 0 && threadIndex == 0) {
-                    processRow(n / 2, balls, accumulatorRow);
+                    processRow(n / 2, balls, accumulatorMap);
                 }
             }));
             threads.get(i).start();
@@ -78,39 +79,30 @@ public class ThreadedLockFreeCollisionResolver implements CollisionResolver {
         }
 
         // Reduction Phase
-        List<Thread> reductionThreads = new ArrayList<>();
-        for (int i = 0; i < threadCount; i++) {
-            final int ballIndex = i;
-            reductionThreads.add(new Thread(() -> {
-                for (int j = ballIndex; j < n; j += threadCount) {
-                    double dx = 0, dy = 0, dvx = 0, dvy = 0;
-                    Set<Ball> colliders = new HashSet<>();
-                    for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
-                        CollisionAccumulator acc = accumulatorTable[threadIndex][j];
-                        dx += acc.getDeltaX();
-                        dy += acc.getDeltaY();
-                        dvx += acc.getDeltaVX();
-                        dvy += acc.getDeltaVY();
-                        colliders.addAll(acc.getColliders());
-                    }
-                    Ball ball = balls.get(j);
-                    ball.setPos(new P2d(ball.getPos().x() + dx, ball.getPos().y() + dy));
-                    ball.setVel(new V2d(ball.getVel().x() + dvx, ball.getVel().y() + dvy));
-                    if (!colliders.isEmpty()) {
-                        ball.setLatestColliders(colliders);
-                    }
+        for (Ball ball : balls) {
+            double dx = 0, dy = 0, dvx = 0, dvy = 0;
+            Set<Ball> colliders = new HashSet<>();
+            for (Map<Ball, CollisionAccumulator> accumulatorMap : accumulatorMaps) {
+                CollisionAccumulator accumulator = accumulatorMap.get(ball);
+                if (accumulator != null) {
+                    dx += accumulator.getDeltaX();
+                    dy += accumulator.getDeltaY();
+                    dvx += accumulator.getDeltaVX();
+                    dvy += accumulator.getDeltaVY();
+                    colliders.addAll(accumulator.getColliders());
                 }
-            }));
-            reductionThreads.get(i).start();
-        }
-        for (Thread thread : reductionThreads) {
-            thread.join();
+            }
+            ball.setPos(new P2d(ball.getPos().x() + dx, ball.getPos().y() + dy));
+            ball.setVel(new V2d(ball.getVel().x() + dvx, ball.getVel().y() + dvy));
+            if (!colliders.isEmpty()) {
+                ball.setLatestColliders(colliders);
+            }
         }
     }
 
-    private void processRow(int i, List<Ball> balls, CollisionAccumulator[] accumulators) {
+    private void processRow(int i, List<Ball> balls, Map<Ball, CollisionAccumulator> accumulatorMap) {
         for (int j = i + 1; j < balls.size(); j++) {
-            Balls.resolveCollisionWithAccumulators(i, j, balls, accumulators);
+            Balls.resolveCollisionWithAccumulators(i, j, balls, accumulatorMap);
         }
     }
 }

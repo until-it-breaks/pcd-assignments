@@ -5,6 +5,7 @@ import pcd.poool.model.common.P2d;
 import pcd.poool.model.common.V2d;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -125,20 +126,29 @@ public class Balls {
     }
 
     /**
-     * Performs collision detection and stores the resulting physical deltas into
-     * provided accumulators instead of modifying the balls directly.
+     * Computes collision response between two balls and stores the resulting physical deltas
+     * into thread-local accumulators instead of modifying the balls directly.
+     *
      * <p>
-     * This method is designed for a MapReduce-style concurrency model. It calculates
-     * displacement and velocity changes and adds them to the {@link CollisionAccumulator}
-     * at the corresponding indices. This allows for lock-free parallel computation
-     * where state updates are deferred to a final reduction phase.
+     * This method performs pairwise collision detection and resolution, calculating both
+     * positional correction (overlap resolution) and velocity impulse (if applicable).
+     * The computed deltas are written into a {@link CollisionAccumulator} associated
+     * with each ball.
      * </p>
-     * @param indexA       The index of the first ball in the balls list.
-     * @param indexB       The index of the second ball in the balls list.
-     * @param balls        The list containing the ball entities.
-     * @param accumulators An array of accumulators where the results will be stored.
+     *
+     * <p>
+     * The method is designed to be used within a parallel Map phase, where each worker
+     * maintains an independent accumulator map. This allows collision contributions to
+     * be computed without synchronization, with state updates deferred to a separate
+     * reduction phase.
+     * </p>
+     *
+     * @param indexA index of the first ball in the list
+     * @param indexB index of the second ball in the list
+     * @param balls list of ball entities
+     * @param accumulators map storing per-ball collision accumulations (thread-local usage expected)
      */
-    public static void resolveCollisionWithAccumulators(int indexA, int indexB, List<Ball> balls, CollisionAccumulator[] accumulators) {
+    public static void resolveCollisionWithAccumulators(int indexA, int indexB, List<Ball> balls, Map<Ball, CollisionAccumulator> accumulators) {
         Ball a = balls.get(indexA);
         Ball b = balls.get(indexB);
         double dx = b.getPos().x() - a.getPos().x();
@@ -174,11 +184,18 @@ public class Balls {
                 b_dvx = (imp / b.getMass()) * nx;
                 b_dvy = (imp / b.getMass()) * ny;
             }
-            CollisionAccumulator accumulatorA = accumulators[indexA];
-            CollisionAccumulator accumulatorB = accumulators[indexB];
-
+            CollisionAccumulator accumulatorA = accumulators.get(a);
+            if (accumulatorA == null) {
+                accumulatorA = new CollisionAccumulator();
+                accumulators.put(a, accumulatorA);
+            }
             accumulatorA.add(a_dx, a_dy, a_dvx, a_dvy);
             accumulatorA.addCollider(b);
+            CollisionAccumulator accumulatorB = accumulators.get(b);
+            if (accumulatorB == null) {
+                accumulatorB = new CollisionAccumulator();
+                accumulators.put(b, accumulatorB);
+            }
             accumulatorB.add(b_dx, b_dy, b_dvx, b_dvy);
             accumulatorB.addCollider(a);
         }
