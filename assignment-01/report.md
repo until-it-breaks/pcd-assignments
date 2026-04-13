@@ -82,7 +82,7 @@ The system handles all external interactions through a unified command-based inp
 
 Input sources act as **producers**, while the `GameEngine` acts as the single **consumer** of all commands. Producers include:
 
-- the human player, generating inputs via the Swing GUI (EDT)
+- the human player, generating inputs via the Swing GUI
 - the `Bot`, running in a separate thread
 
 All inputs are converted into `Command` objects that encapsulate actions to be performed on the game model. These commands are submitted to a shared `CommandQueue`, implemented on top of a `BoundedBuffer` to ensure thread-safe communication between producers and the consumer.
@@ -110,7 +110,7 @@ The `GameEngine` delegates collision handling to the currently set `CollisionRes
 
 ### 3.1 Naive Parallelization
 
-A first attempt at parallelizing collision resolution was based on distributing the pairwise collision checks across multiple threads while protecting shared state through fine-grained synchronization.
+A first attempt at parallelizing collision resolution was based on distributing the pairwise collision checks across multiple threads while protecting shared state through synchronization.
 
 Given `n` balls, collision detection naturally forms a triangular iteration space where each ball `i` must be checked against all balls `j > i`. This can be viewed as a set of “rows”, where row `i` contains `n - i - 1` collision checks.
 
@@ -183,13 +183,24 @@ Despite the careful design of both workload distribution and synchronization, th
 
 The main issue lies in high contention on shared objects. Although collision checks are distributed evenly, the underlying data (balls) are still shared across threads. Since each ball can be involved in multiple collisions within the same step, it becomes a synchronization hotspot.
 
+This contention can be understood more clearly by modeling the synchronization structure as a Petri net.
+
+![Petri net representation of synchronized collision resolution](synchronization.png)
+
+*Petri net representation of the synchronized collision resolution. Each ball is modeled as a shared resource, and each collision check requires exclusive access to two balls. The resulting structure shows potential resource conflicts, limiting effective parallelism.*
+
 ### 3.2 Lock-Free Parallelization via Map-Reduce
 
 The poor scalability of the synchronized approach stems from contention on shared state. Even with balanced workload distribution, threads frequently compete to update the same balls.
 
 To address this, an alternative design was developed based on a Map-Reduce-style decomposition, which eliminates shared mutation during the parallel phase.
 
-Instead of updating a ball's state directly, each thread accumulates differences in a thread-local map and defers all updates to a final reduction step.
+![Petri Net Model of the Map-Reduce Collision Resolver](lockfree.png)
+
+* **Fork Phase (`ASSIGN_WORK`):** The initial state is decomposed into `n` parallel execution paths.
+* **Map Phase (`THREAD_X_WORK`):** Each thread operates in isolation on its own `CollisionAccumulator` map.
+* **Join/Barrier (`RESULTS_COLLECTED`):** The model enforces synchronization; the `REDUCE` transition is only enabled once the place contains all `n` tokens.
+* **Reduce Phase (`REDUCE_DELTAS`):** The final sequential aggregation where deltas are applied to the global state.
 
 A key aspect of this design is how thread-local state is organized. Instead of a single shared structure, a list of accumulator maps is created:
 
@@ -279,8 +290,6 @@ for (Future<Map<Ball, CollisionAccumulator>> future : futures) {
 }
 ```
 
-Unlike the threaded version, where accumulator maps are preallocated and indexed, here they are produced dynamically by tasks and collected via futures.
-
 #### Reduce Phase
 
 The reduction phase remains unchanged: all partial results collected from the futures list are merged sequentially to produce the final state of each ball.
@@ -291,7 +300,7 @@ The reduction phase remains unchanged: all partial results collected from the fu
 
 Before evaluating performance, the correctness of the parallel resolvers was verified using Java PathFinder (JPF). This ensured that the concurrent logic was free of race conditions and produced consistent results across all thread interleavings.
 
-The JPF test suite is located in the `test.java.pcd.poool.jpf` package. The results of the formal verification are summarized below:
+The JPF test suite is located in the `java.pcd.poool.jpf` package. The results of the formal verification are summarized below:
 
 * **TestUnsafeThreadedCollisionResolver**: **FAIL**. JPF successfully identified race conditions where checks and state changes were performed concurrently without synchronization.
 * **TestThreadedCollisionResolver**: **PASS**. Verified that the synchronized approach is thread-safe.
