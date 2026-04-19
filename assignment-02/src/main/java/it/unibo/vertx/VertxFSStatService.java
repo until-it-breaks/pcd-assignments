@@ -4,6 +4,7 @@ import io.vertx.core.*;
 import io.vertx.core.file.FileProps;
 import io.vertx.core.file.FileSystem;
 import it.unibo.api.Bucket;
+import it.unibo.api.Buckets;
 import it.unibo.api.FSReport;
 
 import java.nio.file.Path;
@@ -31,7 +32,7 @@ public class VertxFSStatService {
             }
             List<String> entries = readDirResult.result();
             List<Future<Void>> futures = new ArrayList<>();
-            FSReport partial = new FSReport(createBuckets(maxFileSize, bandCount));
+            FSReport partial = new FSReport(Buckets.createBuckets(maxFileSize, bandCount));
             for (String entry : entries) {
                 Future<Void> entryProcessFuture = processEntry(entry, maxFileSize, bandCount, partial);
                 futures.add(entryProcessFuture);
@@ -85,17 +86,5 @@ public class VertxFSStatService {
         for (int i = 0; i < report.getBuckets().size(); i++) {
             report.getBuckets().get(i).increment(other.getBuckets().get(i).getCount());
         }
-    }
-
-    private List<Bucket> createBuckets(long maxFileSize, int bandCount) {
-        long bandSize = maxFileSize / bandCount;
-        List<Bucket> buckets = new ArrayList<>();
-        for (int i = 0; i < bandCount; i++) {
-            long start = bandSize * i;
-            long end = bandSize * (i + 1);
-            buckets.add(new Bucket(start + "-" + end));
-        }
-        buckets.add(new Bucket(">" + maxFileSize));
-        return buckets;
     }
 }
