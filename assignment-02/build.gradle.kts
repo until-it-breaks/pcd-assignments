@@ -15,6 +15,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // Source: https://mvnrepository.com/artifact/io.vertx/vertx-core
     implementation("io.vertx:vertx-core:5.0.10")
+    // Source: https://mvnrepository.com/artifact/io.reactivex.rxjava3/rxjava
+    implementation("io.reactivex.rxjava3:rxjava:3.1.12")
 }
 
 tasks.test {
