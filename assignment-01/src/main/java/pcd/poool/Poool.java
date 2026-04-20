@@ -23,7 +23,7 @@ public class Poool {
 		 * - massive: 4500 small balls
 		 */
 		Board board = new Board();
-		CollisionResolver resolver = new PooledLockFreeCollisionResolver();
+		CollisionResolver resolver = new PooledLockFreeCollisionResolver(8);
 		board.init(new MassiveBoardConf(), resolver);
 		CommandQueue commandQueue = new CommandQueue();
 		View view = new View(new ViewModel(), 1200, 800, commandQueue);

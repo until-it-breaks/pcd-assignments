@@ -8,17 +8,21 @@ import pcd.poool.controller.commands.CommandQueue;
 import javax.swing.*;
 
 public class View implements GameEngineListener {
-	private final ViewFrame frame;
 	private final ViewModel viewModel;
+	private ViewFrame frame;
 	
 	public View(ViewModel model, int width, int height, CommandQueue controller) {
-		this.frame = new ViewFrame(model, width, height, controller);
-		this.frame.setVisible(true);
 		this.viewModel = model;
+		SwingUtilities.invokeLater(() -> {
+			frame = new ViewFrame(model, width, height, controller);
+			frame.setVisible(true);
+		});
 	}
-		
+
 	public void render() {
-		frame.render();
+		if (frame != null) {
+			frame.render();
+		}
 	}
 	
 	public ViewModel getViewModel() {
