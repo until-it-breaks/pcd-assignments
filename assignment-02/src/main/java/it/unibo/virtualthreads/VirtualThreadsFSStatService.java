@@ -15,12 +15,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
+import static it.unibo.utils.Logger.log;
+
 public class VirtualThreadsFSStatService implements AutoCloseable {
 
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     public FSReport getFSReport(ScanParameters parameters) {
-        return scanDirectory(parameters);
+        try {
+            return executor.submit(() -> scanDirectory(parameters)).get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -34,8 +40,10 @@ public class VirtualThreadsFSStatService implements AutoCloseable {
             stream.forEach(path -> {
                 if (Files.isDirectory(path)) {
                     // Fork: Sub-directories get their own Virtual Thread
+                    log("Forking");
                     futures.add(executor.submit(() -> scanDirectory(parameters.withDirectory(path))));
                 } else if (Files.isRegularFile(path)) {
+                    log("Handling regular files");
                     long fileSize = getFileSize(path);
                     assignToBucket(report, fileSize);
                 }
@@ -44,6 +52,7 @@ public class VirtualThreadsFSStatService implements AutoCloseable {
             throw new RuntimeException(e);
         }
         // Join: Block and wait for all subdirectory results
+        log("Joining");
         for (Future<FSReport> future : futures) {
             try {
                 report.merge(future.get());
