@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import static it.unibo.utils.Logger.log;
+
 public class VertxFSStatService {
     private final Vertx vertx;
 
@@ -79,9 +81,5 @@ public class VertxFSStatService {
                 return;
             }
         }
-    }
-
-    private static void log(String msg) {
-        System.out.println("[ " + System.currentTimeMillis() + " ][ " + Thread.currentThread() + " ] " + msg);
     }
 }
