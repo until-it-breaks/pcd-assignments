@@ -1,11 +1,10 @@
 package it.unibo.vertx;
 
 import io.vertx.core.*;
-import io.vertx.core.file.FileProps;
-import io.vertx.core.file.FileSystem;
 import it.unibo.api.Bucket;
 import it.unibo.api.Buckets;
 import it.unibo.api.FSReport;
+import it.unibo.api.ScanParameters;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -18,73 +17,71 @@ public class VertxFSStatService {
         this.vertx = vertx;
     }
 
-    public Future<FSReport> getFSReport(Path directory, long maxFileSize, int bandCount) {
-        return scanDir(directory.toString(), maxFileSize, bandCount);
+    /**
+     * Entry point: Initiates the recursive asynchronous scan
+     */
+    public Future<FSReport> getFSReport(ScanParameters parameters) {
+        return scanDirectory(parameters);
     }
 
-    private Future<FSReport> scanDir(String directory, long maxFileSize, int bandCount) {
-        Promise<FSReport> promise = Promise.promise();
-        FileSystem fs = this.vertx.fileSystem();
-        fs.readDir(directory).onComplete((AsyncResult<List<String>> readDirResult) -> {
-            if (readDirResult.failed()) {
-                promise.fail(readDirResult.cause());
-                return;
-            }
-            List<String> entries = readDirResult.result();
-            List<Future<Void>> futures = new ArrayList<>();
-            FSReport partial = new FSReport(Buckets.createBuckets(maxFileSize, bandCount));
-            for (String entry : entries) {
-                Future<Void> entryProcessFuture = processEntry(entry, maxFileSize, bandCount, partial);
-                futures.add(entryProcessFuture);
-            }
-            Future.all(futures).onComplete(res -> {
-                if (res.failed()) {
-                    promise.fail(res.cause());
+    /**
+     * Reads a directory, triggers sub-scans for each item,
+     * and merges their reports once they all finish.
+     */
+    private Future<FSReport> scanDirectory(ScanParameters parameters) {
+        // readDir is performed on a vertx worker thread
+        return vertx.fileSystem().readDir(parameters.directory().toString())
+            .compose(paths -> {
+                log("Creating tasks for each path");
+                List<Future<FSReport>> futures = new ArrayList<>();
+                for (String path : paths) {
+                    futures.add(processPath(parameters.withDirectory(Path.of(path))));
+                }
+                return Future.all(futures).map(_ -> {
+                    log("Merging reports");
+                    FSReport totalReport = new FSReport(Buckets.createBuckets(parameters.maxFileSize(), parameters.bandCount()));
+                    for (Future<FSReport> future : futures) {
+                        totalReport.merge(future.result());
+                    }
+                    return totalReport;
+                });
+            });
+    }
+
+    /**
+     * Checks whether a path is a file or directory.
+     * Recursively calls scanDirectory if it's a folder,
+     * otherwise creates a mini-report for a single file.
+     */
+    private Future<FSReport> processPath(ScanParameters parameters) {
+        // props is performed on a vertx worker thread
+        return vertx.fileSystem().props(parameters.directory().toString())
+            .compose(properties -> {
+                log("Evaluating path");
+                if (properties.isDirectory()) {
+                    return scanDirectory(parameters);
                 } else {
-                    promise.complete(partial);
+                    FSReport leafReport = new FSReport(Buckets.createBuckets(parameters.maxFileSize(), parameters.bandCount()));
+                    assignToBucket(leafReport, properties.size());
+                    return Future.succeededFuture(leafReport);
                 }
             });
-        });
-        return promise.future();
     }
 
-    private Future<Void> processEntry(String path, long maxFileSize, int bandCount, FSReport report) {
-        Promise<Void> promise = Promise.promise();
-        vertx.fileSystem().props(path).onComplete(propsRes -> {
-            FileProps props = propsRes.result();
-            if (props.isDirectory()) {
-                scanDir(path, maxFileSize, bandCount).onComplete(scanDirResult -> {
-                    merge(report, scanDirResult.result());
-                    promise.complete();
-                });
-            } else {
-                long size = props.size();
-                report.incrementTotalFiles(1);
-                updateBands(report, size, maxFileSize, bandCount);
-                promise.complete();
+    /**
+     * Executed entirely on the Event Loop thread.
+     */
+    private void assignToBucket(FSReport report, long size) {
+        log("Assigning to bucket");
+        for (Bucket bucket : report.buckets()) {
+            if (bucket.matches(size)) {
+                bucket.increment(1);
+                return;
             }
-        });
-        return promise.future();
-    }
-
-    private void updateBands(FSReport report, long size, long maxFileSize, int bandCount) {
-        long bandSize = maxFileSize / bandCount;
-        List<Bucket> buckets = report.getBuckets();
-        if (size > maxFileSize) {
-            buckets.get(bandCount).increment(1);
-        } else {
-            int index = (int) (size / bandSize);
-            if (index >= bandCount) {
-                index = bandCount - 1;
-            }
-            buckets.get(index).increment(1);
         }
     }
 
-    private void merge(FSReport report, FSReport other) {
-        report.incrementTotalFiles(other.getTotalFiles());
-        for (int i = 0; i < report.getBuckets().size(); i++) {
-            report.getBuckets().get(i).increment(other.getBuckets().get(i).getCount());
-        }
+    private static void log(String msg) {
+        System.out.println("[ " + System.currentTimeMillis() + " ][ " + Thread.currentThread() + " ] " + msg);
     }
 }
