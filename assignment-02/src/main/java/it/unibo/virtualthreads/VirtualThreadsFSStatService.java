@@ -23,12 +23,17 @@ public class VirtualThreadsFSStatService implements AutoCloseable {
         return scanDirectory(parameters);
     }
 
+    /**
+     * Uses a Fork-Join strategy. Each directory scan runs in its own Virtual Thread,
+     * while files within that directory are processed sequentially by that same thread.
+     */
     private FSReport scanDirectory(ScanParameters parameters) {
         FSReport report = new FSReport(Buckets.createBuckets(parameters.maxFileSize(), parameters.bandCount()));
         List<Future<FSReport>> futures = new ArrayList<>();
         try (Stream<Path> stream = Files.list(parameters.directory())) {
             stream.forEach(path -> {
                 if (Files.isDirectory(path)) {
+                    // Fork: Sub-directories get their own Virtual Thread
                     futures.add(executor.submit(() -> scanDirectory(parameters.withDirectory(path))));
                 } else if (Files.isRegularFile(path)) {
                     long fileSize = getFileSize(path);
@@ -38,6 +43,7 @@ public class VirtualThreadsFSStatService implements AutoCloseable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        // Join: Block and wait for all subdirectory results
         for (Future<FSReport> future : futures) {
             try {
                 report.merge(future.get());
