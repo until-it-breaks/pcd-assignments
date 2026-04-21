@@ -4,18 +4,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public record ImmutableFSReport(long totalFiles, List<ImmutableBucket> buckets) {
-    public ImmutableFSReport(long totalFiles, List<ImmutableBucket> buckets) {
-        this.totalFiles = totalFiles;
+public record ImmutableFSReport(List<ImmutableBucket> buckets) {
+    public ImmutableFSReport(List<ImmutableBucket> buckets) {
         this.buckets = Collections.unmodifiableList(buckets);
     }
 
-    public ImmutableFSReport combineWith(ImmutableFSReport other) {
+    public int getTotalFiles() {
+        return buckets.stream()
+                .mapToInt(ImmutableBucket::count)
+                .sum();
+    }
+
+    public ImmutableFSReport combine(ImmutableFSReport other) {
         List<ImmutableBucket> newBuckets = new ArrayList<>();
         for (int i = 0; i < this.buckets.size(); i++) {
-            ImmutableBucket combinedBucket = this.buckets.get(i).combine(other.buckets.get(i));
-            newBuckets.add(combinedBucket);
+            newBuckets.add(this.buckets.get(i).combine(other.buckets().get(i)));
         }
-        return new ImmutableFSReport(this.totalFiles + other.totalFiles, newBuckets);
+        return new ImmutableFSReport(newBuckets);
     }
 }

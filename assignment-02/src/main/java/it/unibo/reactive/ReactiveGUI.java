@@ -4,6 +4,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import it.unibo.api.ImmutableBucket;
 import it.unibo.api.ImmutableFSReport;
+import it.unibo.api.ScanParameters;
 
 import javax.swing.*;
 import java.awt.*;
@@ -82,8 +83,7 @@ public class ReactiveGUI {
             int currentBandCount = (int) bandCountSpinner.getValue();
 
             subscription.dispose();
-            subscription = service.getFSReportUpdates(Path.of(targetPath), currentMax, currentBandCount)
-                .subscribeOn(Schedulers.io())
+            subscription = service.getFSReportUpdates(new ScanParameters(Path.of(targetPath), currentMax, currentBandCount))
                 .observeOn(Schedulers.from(SwingUtilities::invokeLater))
                 .doOnSubscribe(_ -> {
                     resultsArea.setText("Scanning...");
@@ -98,7 +98,7 @@ public class ReactiveGUI {
                 })
                 .subscribe(
                     report -> resultsArea.setText(formatReport(report)),
-                    error -> resultsArea.setText("Error: " + error.getMessage())
+                    error -> resultsArea.setText(error.toString())
                 );
         });
 
@@ -121,20 +121,11 @@ public class ReactiveGUI {
 
     private String formatReport(ImmutableFSReport report) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("Total Files: ").append(report.totalFiles()).append("\n\n");
+        stringBuilder.append("Total Files: ").append(report.getTotalFiles()).append("\n\n");
         stringBuilder.append("Size Distribution:\n");
-        for (ImmutableBucket b : report.buckets()) {
-            stringBuilder.append(String.format("%-15s : %d\n", b.label(), b.count()));
+        for (ImmutableBucket bucket : report.buckets()) {
+            stringBuilder.append(String.format("%-15s : %d\n", bucket.label(), bucket.count()));
         }
         return stringBuilder.toString();
-    }
-
-    static void main() {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            throw new RuntimeException(e);
-        }
-        SwingUtilities.invokeLater(ReactiveGUI::new);
     }
 }
