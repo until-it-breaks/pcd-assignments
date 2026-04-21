@@ -1,11 +1,19 @@
 package it.unibo.api;
 
 public class Bucket {
-    private int count;
+    private final long start;
+    private final long end;
     private final String label;
+    private int count;
 
-    public Bucket(String label) {
-        this.label = label;
+    public Bucket(long start, long end) {
+        this.start = start;
+        this.end = end;
+        this.label = (end == Long.MAX_VALUE) ? ">" + (start - 1) : start + "-" + end;
+    }
+
+    public boolean matches(long size) {
+        return size >= start && size <= end;
     }
 
     public void increment(int amount) {
@@ -16,7 +24,11 @@ public class Bucket {
         return count;
     }
 
-    public String getLabel() {
-        return label;
+    @Override
+    public String toString() {
+        return "Bucket{" +
+                "label='" + label + '\'' +
+                ", count=" + count +
+                '}';
     }
 }

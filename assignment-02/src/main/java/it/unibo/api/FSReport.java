@@ -2,24 +2,25 @@ package it.unibo.api;
 
 import java.util.List;
 
-public class FSReport {
-    private int totalFiles;
-    private final List<Bucket> buckets;
-
-    public FSReport(List<Bucket> buckets) {
-        this.totalFiles = 0;
-        this.buckets = buckets;
-    }
-
-    public void incrementTotalFiles(int amount) {
-        totalFiles += amount;
-    }
+public record FSReport(List<Bucket> buckets) {
 
     public int getTotalFiles() {
-        return totalFiles;
+        return buckets.stream()
+                .mapToInt(Bucket::getCount)
+                .sum();
     }
 
-    public List<Bucket> getBuckets() {
-        return buckets;
+    public void merge(FSReport other) {
+        for (int i = 0; i < this.buckets.size(); i++) {
+            this.buckets.get(i).increment(other.buckets().get(i).getCount());
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "FSReport{" +
+                "totalFiles=" + getTotalFiles() +
+                ", buckets=" + buckets +
+                '}';
     }
 }

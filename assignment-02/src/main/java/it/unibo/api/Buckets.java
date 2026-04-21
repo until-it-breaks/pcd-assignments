@@ -5,14 +5,14 @@ import java.util.List;
 
 public class Buckets {
     public static List<Bucket> createBuckets(long maxFileSize, int bandCount) {
-        long bandSize = maxFileSize / bandCount;
+        long bandSize = Math.max(1, maxFileSize / bandCount);
         List<Bucket> buckets = new ArrayList<>();
         for (int i = 0; i < bandCount; i++) {
             long start = bandSize * i;
-            long end = bandSize * (i + 1);
-            buckets.add(new Bucket(start + "-" + end));
+            long end = (i == bandCount - 1) ? maxFileSize : bandSize * (i + 1) - 1;
+            buckets.add(new Bucket(start, end));
         }
-        buckets.add(new Bucket(">" + maxFileSize));
+        buckets.add(new Bucket(maxFileSize + 1, Long.MAX_VALUE));
         return buckets;
     }
 
@@ -21,7 +21,7 @@ public class Buckets {
         List<ImmutableBucket> buckets = new ArrayList<>();
         for (int i = 0; i < bandCount; i++) {
             long start = bandSize * i;
-            long end = bandSize * (i + 1);
+            long end = (i == bandCount - 1) ? maxFileSize : bandSize * (i + 1) - 1;
             buckets.add(new ImmutableBucket(start + "-" + end, 0));
         }
         buckets.add(new ImmutableBucket(">" + maxFileSize, 0));
