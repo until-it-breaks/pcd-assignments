@@ -19,7 +19,7 @@ object SensorActor {
     Behaviors.receive: (context, message) =>
       message match {
         case DetectIntrusion =>
-          context.log.info("Sensor {} ({}) detected movement/opening!", sensor.id, sensor.sensorType)
+          context.log.info("Sensor [{}] detected movement/opening!", sensor.id)
           controlUnit ! SensorTriggered(sensor)
           Behaviors.same
       }

@@ -11,6 +11,7 @@ object AlarmSystemGuardian {
   enum Command:
     case SignalDetection(sensorId: String)
     case InputPin(pin: String)
+    case ArmCommand(pin: String, zones: Set[Zone])
 
   export Command.*
 
@@ -38,13 +39,19 @@ object AlarmSystemGuardian {
           case Some(sensorActor) =>
             sensorActor ! SensorActor.DetectIntrusion
           case None =>
-            context.log.warn(s"Warning: Sensor $id not found in system")
+            context.log.warn("Warning: Sensor [{}] not found in system", id)
         }
         Behaviors.same
       case InputPin(pin) =>
-       pin.foreach { char =>
+        pin.foreach { char =>
          if (char.isDigit) keypad ! KeypadActor.PressDigit(char.asDigit)
-       }
-       keypad ! KeypadActor.PressEnter
-       Behaviors.same
+        }
+        keypad ! KeypadActor.PressEnter
+        Behaviors.same
+      case ArmCommand(pin, zones) =>
+        pin.foreach { char =>
+          if (char.isDigit) keypad ! KeypadActor.PressDigit(char.asDigit)
+        }
+        keypad ! KeypadActor.PressEnterWithZones(zones)
+        Behaviors.same
 }

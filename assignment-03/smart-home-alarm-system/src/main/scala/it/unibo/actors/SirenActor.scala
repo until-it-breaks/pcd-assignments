@@ -7,12 +7,15 @@ object SirenActor {
   enum Command:
     case Start
     case Stop
+    case GetState(replyTo: ActorRef[SirenState])
 
   export Command.*
 
-  private enum Status:
+  enum SirenState:
     case Sounding
     case Silenced
+
+  export SirenState.*
 
   def apply(): Behavior[Command] =
     silenced()
@@ -23,17 +26,23 @@ object SirenActor {
         case Start =>
           context.log.info("Siren started")
           sounding()
-        case Stop =>
+        case GetState(replyTo) =>
+          replyTo ! SirenState.Silenced
+          Behaviors.same
+        case _ =>
           Behaviors.same
       }
 
   private def sounding(): Behavior[Command] =
     Behaviors.receive: (context, message) =>
       message match {
-        case Start =>
-          Behaviors.same
         case Stop =>
           context.log.info("Siren silenced")
           silenced()
+        case GetState(replyTo) =>
+          replyTo ! SirenState.Sounding
+          Behaviors.same
+        case _ =>
+          Behaviors.same
       }
 }

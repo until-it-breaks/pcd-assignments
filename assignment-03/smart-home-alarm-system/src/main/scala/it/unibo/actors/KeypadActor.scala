@@ -10,6 +10,7 @@ object KeypadActor {
   enum Command:
     case PressDigit(digit: Int)
     case PressEnter
+    case PressEnterWithZones(zones: Set[Zone])
     case PressClear
 
   export Command.*
@@ -33,7 +34,16 @@ object KeypadActor {
             controlUnit ! PinEntered(currentBuffer)
             active(controlUnit, "")
           } else {
-            context.log.info("ENTER pressed with empty PIN")
+            context.log.info("Pressed ENTER with empty PIN")
+            Behaviors.same
+          }
+        case PressEnterWithZones(zones) =>
+          if currentBuffer.nonEmpty then {
+            context.log.info("Submitting PIN with zones to Alarm Control Unit")
+            controlUnit ! ArmRequest(currentBuffer, zones)
+            active(controlUnit, "")
+          } else {
+            context.log.info("Pressed ENTER with zones and empty PIN")
             Behaviors.same
           }
         case PressClear =>

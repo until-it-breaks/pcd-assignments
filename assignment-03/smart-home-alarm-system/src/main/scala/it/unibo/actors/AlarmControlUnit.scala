@@ -22,12 +22,16 @@ object AlarmControlUnit {
   ): Behavior[AlarmSystemInput] =
     Behaviors.receive: (context, message) =>
       message match
-        case PinEntered(pin) if pin == config.pin =>
-          context.log.info("PIN is correct. Transitioning to armed status in {}", config.exitDelay)
+        case ArmRequest(pin, zones) if pin == config.pin =>
+          val zonesDescription = zones.mkString(", ")
+          context.log.info("PIN is correct. Arming zones: [{}] in {}", zonesDescription, config.exitDelay)
           timers.startSingleTimer(ExitTimeout, ExitTimeout, config.exitDelay)
-          exitDelay(config, timers, siren)
-        case PinEntered(_) =>
+          exitDelay(config, timers, siren, zones)
+        case ArmRequest(_, _) =>
           context.log.info("PIN is wrong")
+          Behaviors.same
+        case GetState(replyTo) =>
+          replyTo ! AlarmState.Disarmed
           Behaviors.same
         case _ =>
           context.log.info("System is currently disarmed. Ignoring sensors")
@@ -36,19 +40,23 @@ object AlarmControlUnit {
   private def exitDelay(
     config: Config,
     timers: TimerScheduler[AlarmSystemInput],
-    siren: ActorRef[SirenActor.Command]
+    siren: ActorRef[SirenActor.Command],
+    zonesToArm: Set[Zone]
   ): Behavior[AlarmSystemInput] =
     Behaviors.receive: (context, message) =>
       message match
         case ExitTimeout =>
           context.log.info("System is now armed")
-          armed(config, timers, siren)
+          armed(config, timers, siren, zonesToArm)
         case PinEntered(pin) if pin == config.pin =>
           context.log.info("PIN is correct. Cancelling transition to armed status")
           timers.cancel(ExitTimeout)
           disarmed(config, timers, siren)
         case PinEntered(_) =>
           context.log.info("PIN is wrong")
+          Behaviors.same
+        case GetState(replyTo) =>
+          replyTo ! AlarmState.ExitDelay
           Behaviors.same
         case _ =>
           context.log.info("System is currently arming itself up. Ignoring sensors")
@@ -57,7 +65,8 @@ object AlarmControlUnit {
   private def armed(
     config: Config,
     timers: TimerScheduler[AlarmSystemInput],
-    siren: ActorRef[SirenActor.Command]
+    siren: ActorRef[SirenActor.Command],
+    activeZones: Set[Zone]
   ): Behavior[AlarmSystemInput] =
     Behaviors.receive: (context, message) =>
       message match
@@ -67,11 +76,17 @@ object AlarmControlUnit {
         case PinEntered(_) =>
           context.log.info("PIN is wrong")
           Behaviors.same
-        case SensorTriggered(sensor) =>
-          context.log.warn("Intrusion detected by {}! Starting countdown of {} before sounding the alarm",
-            sensor.id, config.entryDelay)
+        case SensorTriggered(sensor) if activeZones.contains(sensor.zone) =>
+          context.log.info("Intrusion detected in active zone [{}] by [{}]! Starting countdown of {} before sounding the alarm",
+            sensor.zone, sensor.id, config.entryDelay)
           timers.startSingleTimer(EntryTimeout, EntryTimeout, config.entryDelay)
           entryDelay(config, timers, siren)
+        case SensorTriggered(sensor) =>
+          context.log.info("Ignoring sensor [{}] in inactive zone [{}]", sensor.id, sensor.zone)
+          Behaviors.same
+        case GetState(replyTo) =>
+          replyTo ! AlarmState.Armed(activeZones)
+          Behaviors.same
         case _ =>
           Behaviors.same
 
@@ -93,6 +108,9 @@ object AlarmControlUnit {
           context.log.info("Time is up. Starting alarm")
           siren ! SirenActor.Start
           alarm(config, timers, siren)
+        case GetState(replyTo) =>
+          replyTo ! AlarmState.EntryDelay
+          Behaviors.same
         case _ =>
           Behaviors.same
 
@@ -109,6 +127,9 @@ object AlarmControlUnit {
           disarmed(config, timers, siren)
         case PinEntered(_) =>
           context.log.info("PIN is wrong")
+          Behaviors.same
+        case GetState(replyTo) =>
+          replyTo ! AlarmState.Alarm
           Behaviors.same
         case _ =>
           Behaviors.same
