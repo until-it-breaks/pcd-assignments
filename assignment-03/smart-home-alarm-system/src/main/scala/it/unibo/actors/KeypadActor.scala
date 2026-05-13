@@ -5,7 +5,7 @@ import org.apache.pekko.actor.typed.*
 
 object KeypadActor {
   import it.unibo.SmartHomeAlarmSystemProtocol.*
-  import it.unibo.SmartHomeAlarmSystemProtocol.AlarmSystemInput.*
+  import it.unibo.SmartHomeAlarmSystemProtocol.AlarmControlUnitInput.*
 
   enum Command:
     case PressDigit(digit: Int)
@@ -15,11 +15,11 @@ object KeypadActor {
 
   export Command.*
 
-  def apply(controlUnit: ActorRef[AlarmSystemInput]): Behavior[Command] =
+  def apply(controlUnit: ActorRef[AlarmControlUnitInput]): Behavior[Command] =
     active(controlUnit, "")
 
   private def active(
-    controlUnit: ActorRef[AlarmSystemInput],
+    controlUnit: ActorRef[AlarmControlUnitInput],
     currentBuffer: String
   ): Behavior[Command] =
     Behaviors.receive: (context, message) =>

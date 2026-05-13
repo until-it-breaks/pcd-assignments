@@ -5,21 +5,21 @@ import org.apache.pekko.actor.typed.*
 
 import scala.concurrent.duration.FiniteDuration
 
-object AlarmControlUnit {
+object AlarmControlUnitActor {
   import it.unibo.SmartHomeAlarmSystemProtocol.*
-  import it.unibo.SmartHomeAlarmSystemProtocol.AlarmSystemInput.*
+  import it.unibo.SmartHomeAlarmSystemProtocol.AlarmControlUnitInput.*
 
   final case class Config(pin: String, exitDelay: FiniteDuration, entryDelay: FiniteDuration)
 
-  def apply(config: Config, siren: ActorRef[SirenActor.Command]): Behavior[AlarmSystemInput] =
+  def apply(config: Config, siren: ActorRef[SirenActor.Command]): Behavior[AlarmControlUnitInput] =
     Behaviors.withTimers: timers =>
       disarmed(config, timers, siren)
 
   private def disarmed(
     config: Config,
-    timers: TimerScheduler[AlarmSystemInput],
+    timers: TimerScheduler[AlarmControlUnitInput],
     siren: ActorRef[SirenActor.Command]
-  ): Behavior[AlarmSystemInput] =
+  ): Behavior[AlarmControlUnitInput] =
     Behaviors.receive: (context, message) =>
       message match
         case ArmRequest(pin, zones) if pin == config.pin =>
@@ -39,10 +39,10 @@ object AlarmControlUnit {
 
   private def exitDelay(
     config: Config,
-    timers: TimerScheduler[AlarmSystemInput],
+    timers: TimerScheduler[AlarmControlUnitInput],
     siren: ActorRef[SirenActor.Command],
     zonesToArm: Set[Zone]
-  ): Behavior[AlarmSystemInput] =
+  ): Behavior[AlarmControlUnitInput] =
     Behaviors.receive: (context, message) =>
       message match
         case ExitTimeout =>
@@ -64,10 +64,10 @@ object AlarmControlUnit {
 
   private def armed(
     config: Config,
-    timers: TimerScheduler[AlarmSystemInput],
+    timers: TimerScheduler[AlarmControlUnitInput],
     siren: ActorRef[SirenActor.Command],
     activeZones: Set[Zone]
-  ): Behavior[AlarmSystemInput] =
+  ): Behavior[AlarmControlUnitInput] =
     Behaviors.receive: (context, message) =>
       message match
         case PinEntered(pin) if pin == config.pin =>
@@ -92,9 +92,9 @@ object AlarmControlUnit {
 
   private def entryDelay(
     config: Config,
-    timers: TimerScheduler[AlarmSystemInput],
+    timers: TimerScheduler[AlarmControlUnitInput],
     siren: ActorRef[SirenActor.Command]
-  ): Behavior[AlarmSystemInput] =
+  ): Behavior[AlarmControlUnitInput] =
     Behaviors.receive: (context, message) =>
       message match
         case PinEntered(pin) if pin == config.pin =>
@@ -116,9 +116,9 @@ object AlarmControlUnit {
 
   private def alarm(
     config: Config,
-    timers: TimerScheduler[AlarmSystemInput],
+    timers: TimerScheduler[AlarmControlUnitInput],
     siren: ActorRef[SirenActor.Command]
-  ): Behavior[AlarmSystemInput] =
+  ): Behavior[AlarmControlUnitInput] =
     Behaviors.receive: (context, message) =>
       message match
         case PinEntered(pin) if pin == config.pin =>

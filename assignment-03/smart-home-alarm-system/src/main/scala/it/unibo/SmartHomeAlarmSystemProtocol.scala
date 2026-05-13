@@ -17,7 +17,7 @@ object SmartHomeAlarmSystemProtocol {
     case EntryDelay
     case Alarm
 
-  enum AlarmSystemInput:
+  enum AlarmControlUnitInput:
     case SensorTriggered(sensor: Sensor)
     case ArmRequest(pin: String, zonesToArm: Set[Zone])
     case PinEntered(pin: String)

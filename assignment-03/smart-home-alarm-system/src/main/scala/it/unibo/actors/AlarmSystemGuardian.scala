@@ -6,7 +6,7 @@ import org.apache.pekko.actor.typed.*
 object AlarmSystemGuardian {
   import it.unibo.SmartHomeAlarmSystemProtocol
   import it.unibo.SmartHomeAlarmSystemProtocol.*
-  import it.unibo.actors.AlarmControlUnit.*
+  import it.unibo.actors.AlarmControlUnitActor.*
 
   enum Command:
     case SignalDetection(sensorId: String)
@@ -18,7 +18,7 @@ object AlarmSystemGuardian {
   def apply(config: Config, sensorsToCreate: List[Sensor]): Behavior[Command] =
     Behaviors.setup: context =>
       val siren = context.spawn(SirenActor(), "siren")
-      val controlUnit = context.spawn(AlarmControlUnit(config: Config, siren), "control-unit")
+      val controlUnit = context.spawn(AlarmControlUnitActor(config: Config, siren), "control-unit")
       val keypad = context.spawn(KeypadActor(controlUnit), "keypad")
       val sensorMap = sensorsToCreate.map { sensor =>
         val sensorActor = context.spawn(SensorActor(sensor, controlUnit), s"sensor-${sensor.id}")
@@ -29,7 +29,7 @@ object AlarmSystemGuardian {
 
   private def active(
     context: ActorContext[Command],
-    controlUnit: ActorRef[SmartHomeAlarmSystemProtocol.AlarmSystemInput],
+    controlUnit: ActorRef[SmartHomeAlarmSystemProtocol.AlarmControlUnitInput],
     keypad: ActorRef[KeypadActor.Command],
     sensors: Map[String, ActorRef[SensorActor.Command]]
   ): Behavior[Command] =

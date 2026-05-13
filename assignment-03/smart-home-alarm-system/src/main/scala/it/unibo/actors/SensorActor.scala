@@ -5,17 +5,17 @@ import org.apache.pekko.actor.typed.*
 
 object SensorActor {
   import it.unibo.SmartHomeAlarmSystemProtocol.*
-  import it.unibo.SmartHomeAlarmSystemProtocol.AlarmSystemInput.*
+  import it.unibo.SmartHomeAlarmSystemProtocol.AlarmControlUnitInput.*
 
   enum Command:
     case DetectIntrusion
 
   export Command.*
 
-  def apply(sensor: Sensor, controlUnit: ActorRef[AlarmSystemInput]): Behavior[Command] =
+  def apply(sensor: Sensor, controlUnit: ActorRef[AlarmControlUnitInput]): Behavior[Command] =
     active(sensor, controlUnit)
 
-  private def active(sensor: Sensor, controlUnit: ActorRef[AlarmSystemInput]): Behavior[Command] =
+  private def active(sensor: Sensor, controlUnit: ActorRef[AlarmControlUnitInput]): Behavior[Command] =
     Behaviors.receive: (context, message) =>
       message match {
         case DetectIntrusion =>

@@ -7,82 +7,82 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class KeypadActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
   import SmartHomeAlarmSystemProtocol.*
-  import SmartHomeAlarmSystemProtocol.AlarmSystemInput.*
+  import SmartHomeAlarmSystemProtocol.AlarmControlUnitInput.*
   import actors.KeypadActor
   import actors.KeypadActor.Command.*
 
   private def createKeypad() = {
-    val controlProbe = createTestProbe[AlarmSystemInput]()
-    val keypad = spawn(KeypadActor(controlProbe.ref))
-    (keypad, controlProbe)
+    val alarmControlUnitProbe = createTestProbe[AlarmControlUnitInput]()
+    val keypadActor = spawn(KeypadActor(alarmControlUnitProbe.ref))
+    (keypadActor, alarmControlUnitProbe)
   }
 
   "The Keypad Actor" should {
     "accumulate digits and forward the PIN on PressEnter" in {
-      val (keypad, controlProbe) = createKeypad()
-      keypad ! PressDigit(1)
-      keypad ! PressDigit(2)
-      keypad ! PressDigit(3)
-      keypad ! PressDigit(4)
-      keypad ! PressEnter
-      controlProbe.expectMessage(PinEntered("1234"))
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
+      keypadActor ! PressDigit(1)
+      keypadActor ! PressDigit(2)
+      keypadActor ! PressDigit(3)
+      keypadActor ! PressDigit(4)
+      keypadActor ! PressEnter
+      alarmControlUnitProbe.expectMessage(PinEntered("1234"))
     }
 
     "correctly handle interleaved digits and clears" in {
-      val (keypad, controlProbe) = createKeypad()
-      keypad ! PressDigit(1)
-      keypad ! PressClear
-      keypad ! PressDigit(2)
-      keypad ! PressEnter
-      controlProbe.expectMessage(PinEntered("2"))
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
+      keypadActor ! PressDigit(1)
+      keypadActor ! PressClear
+      keypadActor ! PressDigit(2)
+      keypadActor ! PressEnter
+      alarmControlUnitProbe.expectMessage(PinEntered("2"))
     }
 
     "forward the PIN with zones on PressEnterWithZones" in {
-      val (keypad, controlProbe) = createKeypad()
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
       val zones = Set(Zone.Perimeter, Zone.GroundFloor)
-      keypad ! PressDigit(1)
-      keypad ! PressDigit(2)
-      keypad ! PressEnterWithZones(zones)
-      controlProbe.expectMessage(ArmRequest("12", zones))
+      keypadActor ! PressDigit(1)
+      keypadActor ! PressDigit(2)
+      keypadActor ! PressEnterWithZones(zones)
+      alarmControlUnitProbe.expectMessage(ArmRequest("12", zones))
     }
 
     "clear the buffer after PressEnter so a consecutive PressEnter sends nothing" in {
-      val (keypad, controlProbe) = createKeypad()
-      keypad ! PressDigit(1)
-      keypad ! PressEnter
-      keypad ! PressEnter
-      controlProbe.expectMessage(PinEntered("1"))
-      controlProbe.expectNoMessage(100.milliseconds)
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
+      keypadActor ! PressDigit(1)
+      keypadActor ! PressEnter
+      keypadActor ! PressEnter
+      alarmControlUnitProbe.expectMessage(PinEntered("1"))
+      alarmControlUnitProbe.expectNoMessage(100.milliseconds)
     }
 
     "clear the buffer after PressEnterWithZones so a consecutive PressEnter sends nothing" in {
-      val (keypad, controlProbe) = createKeypad()
-      keypad ! PressDigit(1)
-      keypad ! PressEnterWithZones(Set(Zone.Perimeter))
-      keypad ! PressEnter
-      controlProbe.expectMessage(ArmRequest("1", Set(Zone.Perimeter)))
-      controlProbe.expectNoMessage(100.milliseconds)
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
+      keypadActor ! PressDigit(1)
+      keypadActor ! PressEnterWithZones(Set(Zone.Perimeter))
+      keypadActor ! PressEnter
+      alarmControlUnitProbe.expectMessage(ArmRequest("1", Set(Zone.Perimeter)))
+      alarmControlUnitProbe.expectNoMessage(100.milliseconds)
     }
 
     "not send anything on PressEnter with an empty buffer" in {
-      val (keypad, controlProbe) = createKeypad()
-      keypad ! PressEnter
-      controlProbe.expectNoMessage(100.milliseconds)
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
+      keypadActor ! PressEnter
+      alarmControlUnitProbe.expectNoMessage(100.milliseconds)
     }
 
     "not send anything on PressEnterWithZones with an empty buffer" in {
-      val (keypad, controlProbe) = createKeypad()
-      keypad ! PressEnterWithZones(Set(Zone.Perimeter))
-      controlProbe.expectNoMessage(100.milliseconds)
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
+      keypadActor ! PressEnterWithZones(Set(Zone.Perimeter))
+      alarmControlUnitProbe.expectNoMessage(100.milliseconds)
     }
 
     "not send anything on PressEnter after on PressClear" in {
-      val (keypad, controlProbe) = createKeypad()
-      keypad ! PressDigit(1)
-      keypad ! PressDigit(1)
-      keypad ! PressClear
-      keypad ! PressEnter
-      controlProbe.expectNoMessage(100.milliseconds)
+      val (keypadActor, alarmControlUnitProbe) = createKeypad()
+      keypadActor ! PressDigit(1)
+      keypadActor ! PressDigit(1)
+      keypadActor ! PressClear
+      keypadActor ! PressEnter
+      alarmControlUnitProbe.expectNoMessage(100.milliseconds)
     }
   }
 }

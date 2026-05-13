@@ -9,7 +9,7 @@ import scala.concurrent.duration.DurationInt
 
 object SmartHomeAlarmSystem:
   @main def app(): Unit =
-    val config = AlarmControlUnit.Config(
+    val config = AlarmControlUnitActor.Config(
       pin = "1234",
       exitDelay = 20.seconds,
       entryDelay = 10.seconds
