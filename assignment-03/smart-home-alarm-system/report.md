@@ -4,6 +4,7 @@
 Implementing a smart home alarm system requires a concurrent architecture capable of handling multiple asynchronous interactions. The system must process events from a network of sensors and user inputs from a keypad while managing time-sensitive state transitions.
 
 The key concurrent and architectural challenges are that:
+
 *   The `AlarmControlUnit` must receive inputs from sensors and a keypad without those peripheral components needing to know the system's current internal state.
 *   The transition from `disarmed` to `armed` state is handled by an `exitDelay` state. In such a state the user must be able to cancel the arming process by entering the correct PIN before a timeout triggers the full transition.
 *   When in the `armed` state, the system must monitor active zones to transition to an `entryDelay` state upon intrusion detection. 
@@ -16,12 +17,14 @@ The implementation leverages the **Actor Model** via Pekko, treating each compon
 ### Implementation Details
 
 * The `AlarmControlUnitActor` logic is driven by a strictly defined set of inputs within the `AlarmControlUnitInput` protocol. This ensures that the actor only processes relevant domain events:
+  
   * **SensorTriggered**: Carries sensor metadata to check against active zones.
   * **ArmRequest**: Initiates the arming sequence with a PIN and a specific set of zones.
   * **PinEntered**: Used for disarming the system or cancelling delay states.
   * **Timeouts (ExitTimeout/EntryTimeout)**: Internal signals that trigger automatic state transitions after a delay.
 
-* The actor system follows a **centralized topology** organized into a tree managed by the `AlarmSystemGuardian`. All domain decisions flow through the `AlarmControlUnitActor`. Peripheral actors (`KeypadActor`, `SensorActor`, `SirenActor`) only send commands to it or receive them from it, never communicating with each other directly. The `AlarmSystemGuardian` initializes the `AlarmControlUnitActor`, `SirenActor`, `KeypadActor`, and spawns a specific `SensorActor` for every physical sensor in the configuration:
+* The actor system follows a **centralized topology** organized into a tree managed by the `AlarmSystemGuardian`. All domain decisions flow through the `AlarmControlUnitActor`. Peripheral actors (`KeypadActor`, `SensorActor`, `SirenActor`) only send commands to it or receive them from it, never communicating with each other directly. The `AlarmSystemGuardian` initializes the `AlarmControlUnitActor`, `SirenActor`, `KeypadActor`, and spawns a specific `SensorActor` for every physical sensor in the configuration. 
+Each actor has a single, well-defined responsibility:
     *   **KeypadActor**: Accumulates digit presses into an internal string buffer. On `PressEnter`, sends `PinEntered(buffer)` to the `AlarmControlUnitActor` (used for disarming or cancelling delays). On `PressEnterWithZones(zones)`, sends `ArmRequest(buffer, zones)` (used to initiate arming). Both flush the buffer on send. `PressClear` resets the buffer without sending.
     *   **SensorActor**: A stateless forwarder, one instance per physical sensor. On `DetectIntrusion`, forwards `SensorTriggered(sensor)` to the `AlarmControlUnitActor`, where `sensor` carries the configured identity and zone. It never changes behavior.
     *   **SirenActor**: Manages two behaviors, `sounding` and `silenced`, toggled by `Start` and `Stop` respectively. Starts in `silenced`.
