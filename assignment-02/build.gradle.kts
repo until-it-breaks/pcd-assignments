@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("application")
 }
 
 group = "it.unibo"
@@ -7,6 +8,12 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 dependencies {
@@ -17,6 +24,10 @@ dependencies {
     implementation("io.vertx:vertx-core:5.0.10")
     // Source: https://mvnrepository.com/artifact/io.reactivex.rxjava3/rxjava
     implementation("io.reactivex.rxjava3:rxjava:3.1.12")
+}
+
+application {
+    mainClass.set("it.unibo.reactive.TestReactiveGUI")
 }
 
 tasks.test {
