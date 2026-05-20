@@ -6,17 +6,15 @@ object SmartHomeAlarmSystemProtocol {
 
   trait CborSerializable
 
-  sealed trait Zone extends CborSerializable
-
+  final case class Zone(name: String) extends CborSerializable
   object Zone:
-    case object Perimeter     extends Zone
-    case object GroundFloor   extends Zone
-    case object SleepingArea  extends Zone
+    val Perimeter = Zone("Perimeter")
+    val GroundFloor = Zone("GroundFloor")
+    val SleepingArea = Zone("SleepingArea")
 
   final case class Sensor(id: String, zone: Zone) extends CborSerializable
 
   sealed trait AlarmState extends CborSerializable
-
   object AlarmState:
     case object Disarmed                                            extends AlarmState
     case object ExitDelay                                           extends AlarmState
@@ -26,7 +24,6 @@ object SmartHomeAlarmSystemProtocol {
     case object SafeRecovery                                        extends AlarmState
 
   sealed trait AlarmControlUnitInput extends CborSerializable
-
   object AlarmControlUnitInput:
     final case class SensorTriggered(sensor: Sensor)                extends AlarmControlUnitInput
     final case class ArmRequest(pin: String, zonesToArm: Set[Zone]) extends AlarmControlUnitInput

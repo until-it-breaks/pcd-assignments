@@ -8,13 +8,12 @@ object KeypadActor:
   import it.unibo.SmartHomeAlarmSystemProtocol.*
   import it.unibo.SmartHomeAlarmSystemProtocol.AlarmControlUnitInput.*
 
-  sealed trait Command
-  object Command:
-    case class PressDigit(digit: Int)                         extends Command with CborSerializable
-    case object PressEnter                                    extends Command with CborSerializable
-    case class PressEnterWithZones(zones: Set[Zone])          extends Command with CborSerializable
-    case object PressClear                                    extends Command with CborSerializable
-    case class ListingResponse(listing: Receptionist.Listing) extends Command
+  enum Command:
+    case PressDigit(digit: Int)
+    case PressEnter
+    case PressEnterWithZones(zones: Set[Zone])
+    case PressClear
+    case ListingResponse(listing: Receptionist.Listing)
 
   export Command.*
 

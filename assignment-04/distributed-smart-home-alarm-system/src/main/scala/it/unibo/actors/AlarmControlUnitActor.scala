@@ -2,7 +2,7 @@ package it.unibo.actors
 
 import org.apache.pekko.actor.typed.scaladsl.*
 import org.apache.pekko.actor.typed.*
-import org.apache.pekko.actor.typed.receptionist.{Receptionist, ServiceKey}
+import org.apache.pekko.actor.typed.receptionist.*
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -69,7 +69,7 @@ object AlarmControlUnitActor {
           replyTo ! AlarmState.Disarmed
           Behaviors.same
         case _ =>
-          context.log.info("System is currently disarmed. Ignoring sensors")
+          context.log.info("System is currently disarmed. Ignoring sensor triggers and commands")
           Behaviors.same
 
   private def exitDelay(

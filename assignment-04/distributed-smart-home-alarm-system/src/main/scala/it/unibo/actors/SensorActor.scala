@@ -8,10 +8,9 @@ object SensorActor:
   import it.unibo.SmartHomeAlarmSystemProtocol.*
   import it.unibo.SmartHomeAlarmSystemProtocol.AlarmControlUnitInput.*
 
-  sealed trait Command
-  object Command:
-    case object DetectIntrusion                               extends Command with CborSerializable
-    case class ListingResponse(listing: Receptionist.Listing) extends Command
+  enum Command:
+    case DetectIntrusion
+    case ListingResponse(listing: Receptionist.Listing)
 
   export Command.*
 

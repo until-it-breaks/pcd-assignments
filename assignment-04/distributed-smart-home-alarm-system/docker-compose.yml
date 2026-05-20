@@ -1,0 +1,51 @@
+version: '3.8'
+
+networks:
+  pekko-cluster-net:
+    driver: bridge
+
+services:
+  control-unit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - pekko-cluster-net
+    environment:
+      - CLUSTER_IP=control-unit
+      - CLUSTER_PORT=1600
+      - PEKKO_SEED_HOST=control-unit
+      - PEKKO_SEED_PORT=1600
+    command: ["1600", "control-unit"]
+    ports:
+      - "1600:1600"
+
+  keypad-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - pekko-cluster-net
+    environment:
+      - CLUSTER_IP=keypad-node
+      - CLUSTER_PORT=1601
+      - PEKKO_SEED_HOST=control-unit
+      - PEKKO_SEED_PORT=1600
+    command: [ "1601", "keypad" ]
+    depends_on:
+      - control-unit
+
+  sensors-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - pekko-cluster-net
+    environment:
+      - CLUSTER_IP=sensors-node
+      - CLUSTER_PORT=1602
+      - PEKKO_SEED_HOST=control-unit
+      - PEKKO_SEED_PORT=1600
+    command: ["1602", "sensors"]
+    depends_on:
+      - control-unit

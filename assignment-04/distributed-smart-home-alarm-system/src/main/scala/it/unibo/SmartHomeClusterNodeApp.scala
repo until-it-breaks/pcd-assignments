@@ -5,8 +5,8 @@ import it.unibo.SmartHomeAlarmSystemProtocol.*
 import it.unibo.actors.*
 import org.apache.pekko.actor.typed.ActorSystem
 
-import scala.concurrent.duration.DurationInt
-import scala.io.StdIn
+import scala.concurrent.Await
+import scala.concurrent.duration.*
 
 object SmartHomeClusterNodeApp {
   def main(args: Array[String]): Unit = {
@@ -21,27 +21,27 @@ object SmartHomeClusterNodeApp {
     role match {
       case "control-unit" =>
         val alarmConfig = AlarmControlUnitActor.Config("1234", 20.seconds, 10.seconds)
-        ActorSystem(AlarmSystemGuardian.controlUnitNode(alarmConfig), clusterName, config)
-
-        println(">>> Control Unit Node running. Press ENTER in this window to terminate. <<<")
-        StdIn.readLine()
+        val system = ActorSystem(AlarmSystemGuardian.controlUnitNode(alarmConfig), clusterName, config)
+        Await.result(system.whenTerminated, Duration.Inf)
 
       case "keypad" =>
         val system = ActorSystem(AlarmSystemGuardian.keypadNode(), clusterName, config)
         Thread.sleep(5000)
         system ! AlarmSystemGuardian.InputPin("1234")
-
-        println(">>> Keypad Node simulation completed. Keeping process alive. Press ENTER to terminate. <<<")
-        StdIn.readLine()
+        Thread.sleep(1000)
+        system ! AlarmSystemGuardian.ArmCommand("1234", Set(Zone.Perimeter, Zone.SleepingArea))
+        Thread.sleep(50000)
+        system ! AlarmSystemGuardian.InputPin("1234")
+        Await.result(system.whenTerminated, Duration.Inf)
 
       case "sensors" =>
         val sampleSensors = List(Sensor("front-door", Zone.Perimeter), Sensor("window", Zone.SleepingArea))
         val system = ActorSystem(AlarmSystemGuardian.sensorsNode(sampleSensors), clusterName, config)
-        Thread.sleep(15000)
+        Thread.sleep(5000)
+        system ! AlarmSystemGuardian.SignalDetection("window")
+        Thread.sleep(35000)
         system ! AlarmSystemGuardian.SignalDetection("front-door")
-
-        println(">>> Sensors Node simulation completed. Keeping process alive. Press ENTER to terminate. <<<")
-        StdIn.readLine()
+        Await.result(system.whenTerminated, Duration.Inf)
     }
   }
 }
