@@ -2,6 +2,7 @@ package it.unibo.actors
 
 import org.apache.pekko.actor.typed.scaladsl.*
 import org.apache.pekko.actor.typed.*
+import org.apache.pekko.actor.typed.receptionist.{Receptionist, ServiceKey}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -11,9 +12,43 @@ object AlarmControlUnitActor {
 
   final case class Config(pin: String, exitDelay: FiniteDuration, entryDelay: FiniteDuration)
 
-  def apply(config: Config, siren: ActorRef[SirenActor.Command]): Behavior[AlarmControlUnitInput] =
-    Behaviors.withTimers: timers =>
-      disarmed(config, timers, siren)
+  val ControlUnitKey: ServiceKey[AlarmControlUnitInput] = ServiceKey[AlarmControlUnitInput]("AlarmControlUnitService")
+
+  def apply(
+    config: Config,
+    siren: ActorRef[SirenActor.Command],
+    isRecovery: Boolean = false
+  ): Behavior[AlarmControlUnitInput] =
+    Behaviors.setup: context =>
+      context.system.receptionist ! Receptionist.Register(ControlUnitKey, context.self)
+      Behaviors.withTimers: timers =>
+        if (isRecovery) {
+          context.log.warn("Actor recreated due to failure. Entering Safe Recovery State.")
+          safeRecovery(config, timers, siren)
+        } else {
+          context.log.info("Normal system startup. Entering Disarmed State.")
+          disarmed(config, timers, siren)
+        }
+
+  private def safeRecovery(
+    config: Config,
+    timers: TimerScheduler[AlarmControlUnitInput],
+    siren: ActorRef[SirenActor.Command]
+  ): Behavior[AlarmControlUnitInput] =
+    Behaviors.receive: (context, message) =>
+      message match
+        case PinEntered(pin) if pin == config.pin =>
+          context.log.info("[Safe Recovery] Correct PIN entered. System safely cleared to Disarmed state.")
+          disarmed(config, timers, siren)
+        case PinEntered(_) =>
+          context.log.info("[Safe Recovery] Invalid PIN entered during recovery challenge.")
+          Behaviors.same
+        case GetState(replyTo) =>
+          replyTo ! AlarmState.SafeRecovery
+          Behaviors.same
+        case _ =>
+          context.log.info("System is in Safe Recovery Mode. Ignoring sensor triggers and commands.")
+          Behaviors.same
 
   private def disarmed(
     config: Config,

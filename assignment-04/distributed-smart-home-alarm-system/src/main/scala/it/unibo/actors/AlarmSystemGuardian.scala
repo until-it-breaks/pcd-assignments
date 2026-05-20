@@ -3,8 +3,7 @@ package it.unibo.actors
 import org.apache.pekko.actor.typed.scaladsl.*
 import org.apache.pekko.actor.typed.*
 
-object AlarmSystemGuardian {
-  import it.unibo.SmartHomeAlarmSystemProtocol
+object AlarmSystemGuardian:
   import it.unibo.SmartHomeAlarmSystemProtocol.*
   import it.unibo.actors.AlarmControlUnitActor.*
 
@@ -15,43 +14,57 @@ object AlarmSystemGuardian {
 
   export Command.*
 
-  def apply(config: Config, sensorsToCreate: List[Sensor]): Behavior[Command] =
+  def controlUnitNode(config: AlarmControlUnitActor.Config): Behavior[Nothing] =
     Behaviors.setup: context =>
+      context.log.info("Initializing Control Unit Node...")
       val siren = context.spawn(SirenActor(), "siren")
-      val controlUnit = context.spawn(AlarmControlUnitActor(config: Config, siren), "control-unit")
-      val keypad = context.spawn(KeypadActor(controlUnit), "keypad")
+      var controlUnit = context.spawn(AlarmControlUnitActor(config, siren), "control-unit")
+      context.watch(controlUnit)
+
+      Behaviors.receiveSignal:
+        case (context, Terminated(ref)) if ref == controlUnit =>
+          context.log.error("Alarm Control Unit crashed! Restarting in Safe Recovery Mode...")
+          siren ! SirenActor.Stop
+          controlUnit = context.spawn(AlarmControlUnitActor(config, siren, isRecovery = true), "control-unit")
+          context.watch(controlUnit)
+          Behaviors.same
+
+  def keypadNode(): Behavior[Command] =
+    Behaviors.setup: context =>
+      context.log.info("Initializing Keypad Node...")
+      val keypad = context.spawn(KeypadActor(), "keypad")
+
+      Behaviors.receiveMessage:
+        case InputPin(pin) =>
+          pin.foreach { char =>
+            if (char.isDigit) keypad ! KeypadActor.PressDigit(char.asDigit)
+          }
+          keypad ! KeypadActor.PressEnter
+          Behaviors.same
+        case ArmCommand(pin, zones) =>
+          pin.foreach { char =>
+            if (char.isDigit) keypad ! KeypadActor.PressDigit(char.asDigit)
+          }
+          keypad ! KeypadActor.PressEnterWithZones(zones)
+          Behaviors.same
+        case _ =>
+          Behaviors.same
+
+  def sensorsNode(sensorsToCreate: List[Sensor]): Behavior[Command] =
+    Behaviors.setup: context =>
+      context.log.info("Initializing Sensors Node with {} sensors", sensorsToCreate.size)
       val sensorMap = sensorsToCreate.map { sensor =>
-        val sensorActor = context.spawn(SensorActor(sensor, controlUnit), s"sensor-${sensor.id}")
+        val sensorActor = context.spawn(SensorActor(sensor), s"sensor-${sensor.id}")
         sensor.id -> sensorActor
       }.toMap
-      context.log.info("Alarm system initialized with {} sensors", sensorMap.size)
-      active(context, controlUnit, keypad, sensorMap)
 
-  private def active(
-    context: ActorContext[Command],
-    controlUnit: ActorRef[SmartHomeAlarmSystemProtocol.AlarmControlUnitInput],
-    keypad: ActorRef[KeypadActor.Command],
-    sensors: Map[String, ActorRef[SensorActor.Command]]
-  ): Behavior[Command] =
-    Behaviors.receiveMessage:
-      case SignalDetection(id) =>
-        sensors.get(id) match {
-          case Some(sensorActor) =>
-            sensorActor ! SensorActor.DetectIntrusion
-          case None =>
-            context.log.warn("Warning: Sensor [{}] not found in system", id)
-        }
-        Behaviors.same
-      case InputPin(pin) =>
-        pin.foreach { char =>
-         if (char.isDigit) keypad ! KeypadActor.PressDigit(char.asDigit)
-        }
-        keypad ! KeypadActor.PressEnter
-        Behaviors.same
-      case ArmCommand(pin, zones) =>
-        pin.foreach { char =>
-          if (char.isDigit) keypad ! KeypadActor.PressDigit(char.asDigit)
-        }
-        keypad ! KeypadActor.PressEnterWithZones(zones)
-        Behaviors.same
-}
+      Behaviors.receiveMessage:
+        case SignalDetection(id) =>
+          sensorMap.get(id) match
+            case Some(sensorActor) =>
+              sensorActor ! SensorActor.DetectIntrusion
+            case None =>
+              context.log.warn("Sensor [{}] not found in system", id)
+          Behaviors.same
+        case _ =>
+          Behaviors.same
