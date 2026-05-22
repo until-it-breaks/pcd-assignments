@@ -14,19 +14,25 @@ object AlarmSystemGuardian:
 
   export Command.*
 
-  def controlUnitNode(config: AlarmControlUnitActor.Config): Behavior[Nothing] =
+  def controlUnitNode(config: AlarmControlUnitActor.Config, simulateCrash: Boolean = false): Behavior[Nothing] =
     Behaviors.setup: context =>
-      context.log.info("Initializing Control Unit Node...")
+      context.log.info("Initializing Control Unit Node...", simulateCrash)
       val siren = context.spawn(SirenActor(), "siren")
-      var controlUnit = context.spawn(AlarmControlUnitActor(config, siren), "control-unit")
-      context.watch(controlUnit)
+
+      def spawnUnit(isRecovery: Boolean): Unit =
+        val ref = context.spawn(
+          AlarmControlUnitActor(config, siren, isRecovery, simulateCrash),
+          "control-unit"
+        )
+        context.watch(ref)
+
+      spawnUnit(isRecovery = false)
 
       Behaviors.receiveSignal:
-        case (context, Terminated(ref)) if ref == controlUnit =>
+        case (context, Terminated(_)) =>
           context.log.error("Alarm Control Unit crashed! Restarting in Safe Recovery Mode...")
           siren ! SirenActor.Stop
-          controlUnit = context.spawn(AlarmControlUnitActor(config, siren, isRecovery = true), "control-unit")
-          context.watch(controlUnit)
+          spawnUnit(isRecovery = true)
           Behaviors.same
 
   def keypadNode(): Behavior[Command] =

@@ -4,7 +4,7 @@ import org.apache.pekko.actor.typed.scaladsl.*
 import org.apache.pekko.actor.typed.*
 import org.apache.pekko.actor.typed.receptionist.*
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.*
 
 object AlarmControlUnitActor {
   import it.unibo.SmartHomeAlarmSystemProtocol.*
@@ -17,18 +17,20 @@ object AlarmControlUnitActor {
   def apply(
     config: Config,
     siren: ActorRef[SirenActor.Command],
-    isRecovery: Boolean = false
+    isRecovery: Boolean = false,
+    simulateCrash: Boolean = false
   ): Behavior[AlarmControlUnitInput] =
     Behaviors.setup: context =>
       context.system.receptionist ! Receptionist.Register(ControlUnitKey, context.self)
+      if simulateCrash then
+        context.scheduleOnce(50.seconds, context.self, ForceRestart)
       Behaviors.withTimers: timers =>
-        if (isRecovery) {
-          context.log.warn("Actor recreated due to failure. Entering Safe Recovery State.")
+        if (isRecovery)
+          context.log.warn("Control Unit restarted due to failure. Entering SAFE RECOVERY state")
           safeRecovery(config, timers, siren)
-        } else {
-          context.log.info("Normal system startup. Entering Disarmed State.")
+        else
+          context.log.info("Normal system startup. Entering DISARMED state")
           disarmed(config, timers, siren)
-        }
 
   private def safeRecovery(
     config: Config,
@@ -38,16 +40,18 @@ object AlarmControlUnitActor {
     Behaviors.receive: (context, message) =>
       message match
         case PinEntered(pin) if pin == config.pin =>
-          context.log.info("[Safe Recovery] Correct PIN entered. System safely cleared to Disarmed state.")
+          context.log.info("[Safe Recovery] PIN is correct. Entering DISARMED state")
           disarmed(config, timers, siren)
         case PinEntered(_) =>
-          context.log.info("[Safe Recovery] Invalid PIN entered during recovery challenge.")
+          context.log.info("[Safe Recovery] Wrong PIN")
           Behaviors.same
         case GetState(replyTo) =>
           replyTo ! AlarmState.SafeRecovery
           Behaviors.same
+        case ForceRestart =>
+          throw new RuntimeException("Forced restart requested")
         case _ =>
-          context.log.info("System is in Safe Recovery Mode. Ignoring sensor triggers and commands.")
+          context.log.info("System is in SAFE RECOVERY state. Ignoring sensor triggers and commands")
           Behaviors.same
 
   private def disarmed(
@@ -68,8 +72,10 @@ object AlarmControlUnitActor {
         case GetState(replyTo) =>
           replyTo ! AlarmState.Disarmed
           Behaviors.same
+        case ForceRestart =>
+          throw new RuntimeException("Forced restart requested")
         case _ =>
-          context.log.info("System is currently disarmed. Ignoring sensor triggers and commands")
+          context.log.info("System is currently DISARMED. Ignoring sensor triggers and commands")
           Behaviors.same
 
   private def exitDelay(
@@ -84,7 +90,7 @@ object AlarmControlUnitActor {
           context.log.info("System is now armed")
           armed(config, timers, siren, zonesToArm)
         case PinEntered(pin) if pin == config.pin =>
-          context.log.info("PIN is correct. Cancelling transition to armed status")
+          context.log.info("PIN is correct. Cancelling transition to ARMED state")
           timers.cancel(ExitTimeout)
           disarmed(config, timers, siren)
         case PinEntered(_) =>
@@ -93,8 +99,10 @@ object AlarmControlUnitActor {
         case GetState(replyTo) =>
           replyTo ! AlarmState.ExitDelay
           Behaviors.same
+        case ForceRestart =>
+          throw new RuntimeException("Forced restart requested")
         case _ =>
-          context.log.info("System is currently arming itself up. Ignoring sensors")
+          context.log.info("System is arming itself up. Ignoring sensor triggers and commands")
           Behaviors.same
 
   private def armed(
@@ -106,7 +114,7 @@ object AlarmControlUnitActor {
     Behaviors.receive: (context, message) =>
       message match
         case PinEntered(pin) if pin == config.pin =>
-          context.log.info("PIN is correct. Transitioning to disarmed status")
+          context.log.info("PIN is correct. Entering DISARMED state")
           disarmed(config, timers, siren)
         case PinEntered(_) =>
           context.log.info("PIN is wrong")
@@ -122,6 +130,8 @@ object AlarmControlUnitActor {
         case GetState(replyTo) =>
           replyTo ! AlarmState.Armed(activeZones)
           Behaviors.same
+        case ForceRestart =>
+          throw new RuntimeException("Forced restart requested")
         case _ =>
           Behaviors.same
 
@@ -133,7 +143,7 @@ object AlarmControlUnitActor {
     Behaviors.receive: (context, message) =>
       message match
         case PinEntered(pin) if pin == config.pin =>
-          context.log.info("PIN is correct. Countdown to sound the alarm has been stopped. Transitioning to disarmed status")
+          context.log.info("PIN is correct. Countdown to sound the alarm has been stopped. Entering disarmed state")
           timers.cancel(EntryTimeout)
           disarmed(config, timers, siren)
         case PinEntered(_) =>
@@ -146,6 +156,8 @@ object AlarmControlUnitActor {
         case GetState(replyTo) =>
           replyTo ! AlarmState.EntryDelay
           Behaviors.same
+        case ForceRestart =>
+          throw new RuntimeException("Forced restart requested")
         case _ =>
           Behaviors.same
 
@@ -157,15 +169,17 @@ object AlarmControlUnitActor {
     Behaviors.receive: (context, message) =>
       message match
         case PinEntered(pin) if pin == config.pin =>
-          context.log.info("PIN is correct. Deactivating alarm. Transitioning to disarmed status")
+          context.log.info("PIN is correct. Deactivating alarm. Entering DISARMED state")
           siren ! SirenActor.Stop
           disarmed(config, timers, siren)
         case PinEntered(_) =>
-          context.log.info("PIN is wrong")
+          context.log.info("PIN is wrong. Alarm stays on")
           Behaviors.same
         case GetState(replyTo) =>
           replyTo ! AlarmState.Alarm
           Behaviors.same
+        case ForceRestart =>
+          throw new RuntimeException("Forced restart requested")
         case _ =>
           Behaviors.same
 }

@@ -31,4 +31,5 @@ object SmartHomeAlarmSystemProtocol {
     case object ExitTimeout                                         extends AlarmControlUnitInput
     case object EntryTimeout                                        extends AlarmControlUnitInput
     final case class GetState(replyTo: ActorRef[AlarmState])        extends AlarmControlUnitInput
+    case object ForceRestart                                        extends AlarmControlUnitInput
 }

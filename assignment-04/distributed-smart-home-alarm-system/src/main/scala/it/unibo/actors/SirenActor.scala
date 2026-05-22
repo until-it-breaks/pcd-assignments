@@ -22,7 +22,7 @@ object SirenActor {
 
   private def silenced(): Behavior[Command] =
     Behaviors.receive: (context, message) =>
-      message match {
+      message match
         case Start =>
           context.log.info("Siren started")
           sounding()
@@ -31,11 +31,10 @@ object SirenActor {
           Behaviors.same
         case _ =>
           Behaviors.same
-      }
 
   private def sounding(): Behavior[Command] =
     Behaviors.receive: (context, message) =>
-      message match {
+      message match
         case Stop =>
           context.log.info("Siren silenced")
           silenced()
@@ -44,5 +43,4 @@ object SirenActor {
           Behaviors.same
         case _ =>
           Behaviors.same
-      }
 }

@@ -28,19 +28,19 @@ object KeypadActor:
       message match
         case ListingResponse(AlarmControlUnitActor.ControlUnitKey.Listing(listings)) =>
           listings.headOption match
-            case Some(controlUnitRef) =>
-              context.log.info("Keypad discovered Alarm Control Unit")
-              active(controlUnitRef, currentBuffer)
+            case Some(ref) =>
+              context.log.info("Keypad discovered Control Unit")
+              active(ref, currentBuffer)
             case None => Behaviors.same
         case PressDigit(digit) =>
           val updatedBuffer = currentBuffer + digit.toString
-          context.log.info("[Disconnected] Current PIN: {}", "*".repeat(updatedBuffer.length))
+          context.log.info("[Disconnected] Digit inserted. Current PIN: {}", "*".repeat(updatedBuffer.length))
           standby(updatedBuffer)
         case PressClear =>
           context.log.info("[Disconnected] PIN cleared")
           standby("")
         case PressEnter | PressEnterWithZones(_) =>
-          context.log.info("[Disconnected] Cannot submit PIN. Not connected to Alarm Control Unit yet")
+          context.log.info("[Disconnected] Cannot submit PIN. Keypad is not connected to Control Unit")
           Behaviors.same
         case _ => Behaviors.same
 
@@ -52,34 +52,32 @@ object KeypadActor:
       message match
         case ListingResponse(AlarmControlUnitActor.ControlUnitKey.Listing(listings)) =>
           listings.headOption match
-            case Some(controlUnitRef) =>
-              context.log.warn("Alarm Control Unit updated (possibly restarted)")
-              active(controlUnitRef, currentBuffer)
+            case Some(ref) =>
+              context.log.warn("Connection to Control Unit updated")
+              active(ref, currentBuffer)
             case None =>
-              context.log.warn("Alarm Control Unit connection lost! Reverting to standby.")
+              context.log.warn("Connection to Control Unit lost! Reverting to standby")
               standby(currentBuffer)
         case PressDigit(digit) =>
           val updatedBuffer = currentBuffer + digit.toString
-          context.log.info("Current PIN: {}", "*".repeat(updatedBuffer.length))
+          context.log.info("Digit inserted. Current PIN: {}", "*".repeat(updatedBuffer.length))
           active(controlUnit, updatedBuffer)
         case PressEnter =>
-          if currentBuffer.nonEmpty then {
-            context.log.info("Submitting PIN to Alarm Control Unit")
+          if currentBuffer.nonEmpty then
+            context.log.info("Submitting PIN to Control Unit")
             controlUnit ! PinEntered(currentBuffer)
             active(controlUnit, "")
-          } else {
-            context.log.info("Pressed ENTER with empty PIN")
+          else
+            context.log.info("ENTER pressed with empty PIN")
             Behaviors.same
-          }
         case PressEnterWithZones(zones) =>
-          if currentBuffer.nonEmpty then {
-            context.log.info("Submitting PIN with zones to Alarm Control Unit")
+          if currentBuffer.nonEmpty then
+            context.log.info("Submitting PIN with zones to Control Unit")
             controlUnit ! ArmRequest(currentBuffer, zones)
             active(controlUnit, "")
-          } else {
-            context.log.info("Pressed ENTER with zones and empty PIN")
+          else
+            context.log.info("ENTER pressed with zones and empty PIN")
             Behaviors.same
-          }
         case PressClear =>
           context.log.info("PIN cleared")
           active(controlUnit, "")

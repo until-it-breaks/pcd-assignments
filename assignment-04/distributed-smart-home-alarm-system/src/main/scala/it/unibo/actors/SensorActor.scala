@@ -25,12 +25,12 @@ object SensorActor:
       message match
         case ListingResponse(AlarmControlUnitActor.ControlUnitKey.Listing(listings)) =>
           listings.headOption match
-            case Some(controlUnitRef) =>
-              context.log.info("Sensor [{}] discovered Alarm Control Unit", sensor.id)
-              active(sensor, controlUnitRef)
+            case Some(ref) =>
+              context.log.info("Sensor [{}] discovered Control Unit", sensor.id)
+              active(sensor, ref)
             case None => Behaviors.same
         case DetectIntrusion =>
-          context.log.warn("[Disconnected] Sensor [{}] detected movement/opening but it's not yet connected to Alarm Control Unit", sensor.id)
+          context.log.info("[Disconnected] Sensor [{}] detected something but it's not connected to Control Unit", sensor.id)
           Behaviors.same
         case _ => Behaviors.same
 
@@ -39,14 +39,14 @@ object SensorActor:
       message match
         case ListingResponse(AlarmControlUnitActor.ControlUnitKey.Listing(listings)) =>
           listings.headOption match
-            case Some(controlUnitRef) =>
-              context.log.warn("Alarm Control Unit updated (possibly restarted)")
-              active(sensor, controlUnitRef)
+            case Some(ref) =>
+              context.log.warn("Connection to Control Unit updated")
+              active(sensor, ref)
             case None =>
-              context.log.warn("Sensor [{}] lost connection to the Alarm Control Unit! Reverting to standby.", sensor.id)
+              context.log.warn("Sensor [{}] lost connection to Control Unit! Reverting to standby", sensor.id)
               standby(sensor)
         case DetectIntrusion =>
-          context.log.info("Sensor [{}] detected movement/opening!", sensor.id)
+          context.log.info("Sensor [{}] detected something", sensor.id)
           controlUnit ! SensorTriggered(sensor)
           Behaviors.same
         case _ => Behaviors.same
