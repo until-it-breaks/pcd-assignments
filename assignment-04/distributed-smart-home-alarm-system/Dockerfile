@@ -12,6 +12,6 @@ FROM eclipse-temurin:25.0.3_9-jre
 
 WORKDIR /app
 
-COPY --from=builder /app/target/cluster.jar /app/cluster.jar
+COPY --from=builder /app/target/app.jar /app/app.jar
 
-ENTRYPOINT ["java", "-jar", "cluster.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

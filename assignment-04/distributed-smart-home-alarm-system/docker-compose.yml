@@ -1,51 +1,42 @@
-version: '3.8'
-
 networks:
-  pekko-cluster-net:
+  pekko-network:
     driver: bridge
 
 services:
-  control-unit:
+  control-unit-node:
     build:
       context: .
       dockerfile: Dockerfile
+    image: smart-home-cluster:latest
     networks:
-      - pekko-cluster-net
+      - pekko-network
     environment:
-      - CLUSTER_IP=control-unit
-      - CLUSTER_PORT=1600
-      - PEKKO_SEED_HOST=control-unit
-      - PEKKO_SEED_PORT=1600
-    command: ["1600", "control-unit"]
+      - NODE_HOST=control-unit-node
+      - NODE_PORT=1600
+      - SEED_HOST=control-unit-node
+      - SEED_PORT=1600
+    command: ["control-unit"]
     ports:
       - "1600:1600"
 
   keypad-node:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: smart-home-cluster:latest
     networks:
-      - pekko-cluster-net
+      - pekko-network
     environment:
-      - CLUSTER_IP=keypad-node
-      - CLUSTER_PORT=1601
-      - PEKKO_SEED_HOST=control-unit
-      - PEKKO_SEED_PORT=1600
-    command: [ "1601", "keypad" ]
-    depends_on:
-      - control-unit
+      - NODE_HOST=keypad-node
+      - NODE_PORT=1601
+      - SEED_HOST=control-unit-node
+      - SEED_PORT=1600
+    command: ["keypad"]
 
   sensors-node:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: smart-home-cluster:latest
     networks:
-      - pekko-cluster-net
+      - pekko-network
     environment:
-      - CLUSTER_IP=sensors-node
-      - CLUSTER_PORT=1602
-      - PEKKO_SEED_HOST=control-unit
-      - PEKKO_SEED_PORT=1600
-    command: ["1602", "sensors"]
-    depends_on:
-      - control-unit
+      - NODE_HOST=sensors-node
+      - NODE_PORT=1602
+      - SEED_HOST=control-unit-node
+      - SEED_PORT=1600
+    command: ["sensors"]

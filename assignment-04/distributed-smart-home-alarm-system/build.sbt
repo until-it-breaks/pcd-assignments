@@ -17,9 +17,9 @@ lazy val root = (project in file("."))
     )
   )
 
-// Compile the final artifact into a named binary located at target/cluster.jar
+// Compile the final artifact into a named binary located at target/app.jar
 // Dockerfile needs a fixed string to copy the binary into the container image
-assembly / assemblyOutputPath := baseDirectory.value / "target" / "cluster.jar"
+assembly / assemblyOutputPath := baseDirectory.value / "target" / "app.jar"
 
 // Many modern Java libraries include a special metadata file called module-info.class.
 // If different libraries include this file sbt-assembly refuses to build the jar because it doesn't know which version to keep.
