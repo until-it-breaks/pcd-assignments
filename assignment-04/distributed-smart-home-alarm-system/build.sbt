@@ -6,7 +6,7 @@ ThisBuild / scalaVersion := "3.8.3"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "distributed-smart-home-alarm-system",
+    name := "clustered-smart-home-alarm-system",
     libraryDependencies ++= Seq(
       "org.apache.pekko" %% "pekko-actor-typed" % PekkoVersion,
       "org.apache.pekko" %% "pekko-actor-testkit-typed" % PekkoVersion % Test,

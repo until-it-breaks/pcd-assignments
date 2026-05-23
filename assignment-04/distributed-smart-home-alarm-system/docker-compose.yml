@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: smart-home-cluster:latest
+    image: smart-home-cluster-node:latest
     networks:
       - pekko-network
     environment:
@@ -20,7 +20,7 @@ services:
       - "1600:1600"
 
   keypad-node:
-    image: smart-home-cluster:latest
+    image: smart-home-cluster-node:latest
     networks:
       - pekko-network
     environment:
@@ -31,7 +31,7 @@ services:
     command: ["keypad"]
 
   sensors-node:
-    image: smart-home-cluster:latest
+    image: smart-home-cluster-node:latest
     networks:
       - pekko-network
     environment:
