@@ -55,11 +55,11 @@ public class GameSession {
     public boolean isMyTurn() {
         try {
             if (currentGame != null) {
-                UUID active = currentGame.getActivePlayerId();
+                UUID active = currentGame.getCurrentTurnPlayerId();
                 return active != null && active.equals(localPlayerId);
             }
         } catch (RemoteException e) {
-            System.out.println("Error checking active player: " + e.getMessage());
+            System.out.println("Error checking whose turn it is: " + e.getMessage());
         }
         return false;
     }

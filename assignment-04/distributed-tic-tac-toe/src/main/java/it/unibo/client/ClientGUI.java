@@ -27,7 +27,7 @@ public class ClientGUI extends JFrame {
         this.setVisible(true);
     }
 
-    public void startGame() {
+    public void start() {
         session.stopPolling();
         boardPanel.reset();
         statusLabel.setText(" ");
@@ -86,7 +86,7 @@ public class ClientGUI extends JFrame {
                 this, "The match has concluded. Would you like to play again?",
                 "Play Again?", JOptionPane.YES_NO_OPTION);
         if (replayChoice == JOptionPane.YES_OPTION) {
-            startGame();
+            start();
         } else {
             System.exit(0);
         }

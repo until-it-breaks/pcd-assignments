@@ -11,7 +11,7 @@ public class GameClient {
             Registry registry = LocateRegistry.getRegistry(1099);
             GameManager manager = (GameManager) registry.lookup("GameManager");
             ClientGUI gui = new ClientGUI(manager);
-            gui.startGame();
+            gui.start();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

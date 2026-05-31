@@ -16,7 +16,7 @@ public interface Game extends Remote {
 
     Board getBoard() throws RemoteException;
 
-    UUID getActivePlayerId() throws RemoteException;
+    UUID getCurrentTurnPlayerId() throws RemoteException;
 
     String getGameId() throws RemoteException;
 }

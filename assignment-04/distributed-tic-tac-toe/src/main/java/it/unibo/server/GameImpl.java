@@ -27,30 +27,30 @@ public class GameImpl extends UnicastRemoteObject implements Game {
     public synchronized void addPlayer(UUID playerId) throws RemoteException {
         if (firstPlayerId == null) {
             firstPlayerId = playerId;
-            log("Player 1 joined: " + playerId);
+            log("Player 1 joined: [" + playerId + "]");
         } else if (secondPlayerId == null) {
             secondPlayerId = playerId;
             currentTurnPlayerId = firstPlayerId;
             gameStatus = GameStatus.ONGOING;
-            log("Player 2 joined: " + playerId + ". . First turn: " + currentTurnPlayerId);
+            log("Player 2 joined: [" + playerId + "]. First turn: [" + currentTurnPlayerId + "]");
         } else {
-            log("Player " + playerId + " attempted to join, but room is full.");
+            log("Player [" + playerId + "] attempted to join, but room is full");
         }
     }
 
     @Override
     public synchronized void makeMove(UUID playerId, int row, int col) throws RemoteException {
         if (gameStatus != GameStatus.ONGOING) {
-            log("Move rejected from " + playerId + ": Game is not active (Status: " + gameStatus + ")");
+            log("Move from Player [" + playerId + "] rejected. Game status is: [" + gameStatus + "]");
             return;
         }
         if (!playerId.equals(currentTurnPlayerId)) {
-            log("Move rejected: Player " + playerId + " attempted to play out of turn. Active turn is: " + currentTurnPlayerId);
+            log("Move from Player [" + playerId + "] rejected. It's [" + currentTurnPlayerId + "]'s turn");
             return;
         }
         CellState symbol = playerId.equals(firstPlayerId) ? CellState.X : CellState.O;
         if (board.makeMove(row, col, symbol)) {
-            log("Player " + symbol + " (" + playerId + ") made a valid move at [" + row + "," + col + "]");
+            log("Player " + symbol + " [" + playerId + "] made a valid move at [" + row + "," + col + "]");
             if (board.checkWin(symbol)) {
                 gameStatus = (symbol == CellState.X) ? GameStatus.X_WON : GameStatus.O_WON;
                 log("Match concluded. Result: " + gameStatus);
@@ -59,10 +59,10 @@ public class GameImpl extends UnicastRemoteObject implements Game {
                 log("Match concluded. Result: DRAW");
             } else {
                 currentTurnPlayerId = currentTurnPlayerId.equals(firstPlayerId) ? secondPlayerId : firstPlayerId;
-                log("Turn advanced. Next up: " + currentTurnPlayerId);
+                log("Turn advanced. Next up: [" + currentTurnPlayerId + "]");
             }
         } else {
-            log("Move rejected from " + playerId + ": Cell [" + row + "," + col + "] is already occupied.");
+            log("Move from [" + playerId + "] rejected. Cell [" + row + "," + col + "] is already occupied");
         }
     }
 
@@ -77,7 +77,7 @@ public class GameImpl extends UnicastRemoteObject implements Game {
     }
 
     @Override
-    public synchronized UUID getActivePlayerId() throws RemoteException {
+    public synchronized UUID getCurrentTurnPlayerId() throws RemoteException {
         return this.currentTurnPlayerId;
     }
 

@@ -7,7 +7,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GameManagerImpl extends UnicastRemoteObject implements GameManager {
-
     private final Map<String, Game> games;
 
     protected GameManagerImpl() throws RemoteException {
