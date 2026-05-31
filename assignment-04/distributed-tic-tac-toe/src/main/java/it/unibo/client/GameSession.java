@@ -22,9 +22,8 @@ public class GameSession {
         this.localPlayerId = localPlayerId;
     }
 
-    public Game join(String gameId) throws Exception {
+    public void joinGame(String gameId) throws Exception {
         currentGame = manager.joinGame(gameId, localPlayerId);
-        return currentGame;
     }
 
     public void createGame(String gameId) throws Exception {

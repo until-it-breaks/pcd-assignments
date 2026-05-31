@@ -39,7 +39,7 @@ public class ClientGUI extends JFrame {
         statusLabel.setText("Connecting...");
         runAsync(() -> {
             if (shouldCreate) session.createGame(gameId);
-            session.join(gameId);
+            session.joinGame(gameId);
             session.startPolling(this::updateUIState);
         });
     }
