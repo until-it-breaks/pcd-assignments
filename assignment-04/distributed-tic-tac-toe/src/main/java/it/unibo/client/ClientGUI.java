@@ -30,15 +30,18 @@ public class ClientGUI extends JFrame {
     public void start() {
         session.stopPolling();
         boardPanel.reset();
-        statusLabel.setText(" ");
         hasPromptedReplay = false;
-        try {
-            String gameId = promptForGameId();
+        int choice = JOptionPane.showOptionDialog(this, "Select Action:", "TicTacToe", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, new String[]{ "Create Game", "Join Game" }, "Create Game");
+        if (choice == JOptionPane.CLOSED_OPTION) System.exit(0);
+        String gameId = JOptionPane.showInputDialog(this, "Enter Game Name:");
+        if (gameId == null) return;
+        boolean shouldCreate = choice == 0;
+        statusLabel.setText("Connecting...");
+        runAsync(() -> {
+            if (shouldCreate) session.createGame(gameId);
             session.join(gameId);
             session.startPolling(this::updateUIState);
-        } catch (Exception e) {
-            System.out.println("Matchmaking Error: " + e.getMessage());
-        }
+        });
     }
 
     private void updateUIState(Board board, GameStatus status) {
@@ -51,7 +54,7 @@ public class ClientGUI extends JFrame {
                     statusLabel.setText("Match Finished: " + status);
                     if (!hasPromptedReplay) {
                         hasPromptedReplay = true;
-                        new Thread(this::promptReplay).start();
+                        promptReplay();
                     }
                 }
             }
@@ -59,36 +62,38 @@ public class ClientGUI extends JFrame {
     }
 
     private void handleCellClick(int row, int col) {
-        if (!session.isMyTurn()) return;
-        session.makeMove(row, col);
-    }
-
-    private String promptForGameId() throws Exception {
-        String[] options = { "Create Game", "Join Game" };
-        String gameId = null;
-        while (gameId == null) {
-            int choice = JOptionPane.showOptionDialog(this, "Select Action:", "TicTacToe",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]
-            );
-            if (choice == JOptionPane.CLOSED_OPTION) {
-                System.exit(0);
-            }
-            gameId = JOptionPane.showInputDialog(this, "Enter Room Name:");
-            if (choice == 0 && gameId != null) {
-                this.session.createGame(gameId);
-            }
-        }
-        return gameId;
+        runAsync(() -> {
+            if (!session.isMyTurn()) return;
+            session.makeMove(row, col);
+        });
     }
 
     private void promptReplay() {
-        int replayChoice = JOptionPane.showConfirmDialog(
-                this, "The match has concluded. Would you like to play again?",
-                "Play Again?", JOptionPane.YES_NO_OPTION);
-        if (replayChoice == JOptionPane.YES_OPTION) {
+        int choice = JOptionPane.showConfirmDialog(this, "The match has ended. Would you like to play again?", "Play Again?", JOptionPane.YES_NO_OPTION);
+        if (choice == JOptionPane.YES_OPTION) {
             start();
         } else {
             System.exit(0);
         }
+    }
+
+    private void runAsync(RunnableWithException task) {
+        new Thread(() -> {
+            try {
+                task.run();
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> showError(e));
+            }
+        }).start();
+    }
+
+    private void showError(Exception e) {
+        statusLabel.setText("Error");
+        JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    @FunctionalInterface
+    private interface RunnableWithException {
+        void run() throws Exception;
     }
 }

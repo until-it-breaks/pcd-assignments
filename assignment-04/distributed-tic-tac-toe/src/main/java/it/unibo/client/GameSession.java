@@ -50,13 +50,11 @@ public class GameSession {
         }
     }
     public void makeMove(int row, int col) {
-        new Thread(() -> {
-            try {
-                currentGame.makeMove(localPlayerId, row, col);
-            } catch (RemoteException e) {
-                System.out.println("Network Error: Failed to transmit move");
-            }
-        }).start();
+        try {
+            currentGame.makeMove(localPlayerId, row, col);
+        } catch (RemoteException e) {
+            System.out.println("Network Error: Failed to transmit move");
+        }
     }
 
     public boolean isMyTurn() {
