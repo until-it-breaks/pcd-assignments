@@ -2,16 +2,20 @@ package it.unibo.client;
 
 import it.unibo.server.Game;
 import it.unibo.server.GameManager;
+import it.unibo.shared.Board;
+import it.unibo.shared.GameStatus;
 
-import javax.swing.*;
 import java.rmi.RemoteException;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class GameSession {
     private final GameManager manager;
     private final UUID localPlayerId;
     private Game currentGame;
-    private Timer pollingTimer;
+    private ScheduledExecutorService scheduler;
 
     public GameSession(GameManager manager, UUID localPlayerId) {
         this.manager = manager;
@@ -28,20 +32,23 @@ public class GameSession {
     }
 
     public void startPolling(GameUpdateListener gameUpdateListener) {
-        pollingTimer = new Timer(500, e -> {
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(() -> {
             try {
-                gameUpdateListener.onUpdate(currentGame.getBoard(), currentGame.getGameStatus());
+                Board board = currentGame.getBoard();
+                GameStatus status = currentGame.getGameStatus();
+                gameUpdateListener.onUpdate(board, status);
             } catch (RemoteException ex) {
-                pollingTimer.stop();
+                stopPolling();
             }
-        });
-        pollingTimer.start();
+        }, 0, 500, TimeUnit.MILLISECONDS);
     }
 
     public void stopPolling() {
-        if (pollingTimer != null && pollingTimer.isRunning()) pollingTimer.stop();
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+        }
     }
-
     public void makeMove(int row, int col) {
         new Thread(() -> {
             try {
